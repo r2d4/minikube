@@ -19,7 +19,6 @@ package notify
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -34,6 +33,7 @@ import (
 )
 
 const updateLinkPrefix = "https://github.com/kubernetes/minikube/releases/tag/v"
+const timeout = time.Duration(5 * time.Second)
 
 var (
 	timeLayout                = time.RFC1123
@@ -42,12 +42,12 @@ var (
 	NotifyMsg                 = make(chan string)
 )
 
-func MaybePrintUpdateTextFromGithub(output io.Writer) {
-	MaybePrintUpdateText(output, githubMinikubeReleasesURL, lastUpdateCheckFilePath)
-	NotifyMsg <- "finished checking for stuff"
+func MaybePrintUpdateTextFromGithub() {
+	MaybePrintUpdateText(githubMinikubeReleasesURL, lastUpdateCheckFilePath)
+	close(NotifyMsg)
 }
 
-func MaybePrintUpdateText(output io.Writer, url string, lastUpdatePath string) {
+func MaybePrintUpdateText(url string, lastUpdatePath string) {
 	if !shouldCheckURLVersion(lastUpdatePath) {
 		return
 	}
@@ -63,7 +63,7 @@ func MaybePrintUpdateText(output io.Writer, url string, lastUpdatePath string) {
 	}
 	if localVersion.Compare(latestVersion) < 0 {
 		writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC())
-		fmt.Fprintf(output, `There is a newer version of minikube available (%s%s).  Download it here:
+		NotifyMsg <- fmt.Sprintf(`There is a newer version of minikube available (%s%s).  Download it here:
 %s%s
 To disable this notification, add WantUpdateNotification: False to the json config file at %s
 (you may have to create the file config.json in this folder if you have no previous configuration)
@@ -90,7 +90,10 @@ type release struct {
 type releases []release
 
 func getJson(url string, target *releases) error {
-	r, err := http.Get(url)
+	client := http.Client{
+		Timeout: timeout,
+	}
+	r, err := client.Get(url)
 	if err != nil {
 		return err
 	}

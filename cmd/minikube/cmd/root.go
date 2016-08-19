@@ -61,12 +61,15 @@ var RootCmd = &cobra.Command{
 			log.SetOutWriter(ioutil.Discard)
 			log.SetErrWriter(ioutil.Discard)
 		}
-		go notify.MaybePrintUpdateTextFromGithub(os.Stdout)
+		go notify.MaybePrintUpdateTextFromGithub()
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
-		msg, ok := <-notify.NotifyMsg
-		if ok {
-			fmt.Println(msg)
+		select {
+		case msg, ok := <-notify.NotifyMsg:
+			if ok {
+				fmt.Println(msg)
+			}
+		default:
 		}
 		glog.Infof("persistent post done")
 	},
