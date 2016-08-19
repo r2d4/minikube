@@ -39,10 +39,12 @@ var (
 	timeLayout                = time.RFC1123
 	lastUpdateCheckFilePath   = constants.MakeMiniPath("last_update_check")
 	githubMinikubeReleasesURL = "https://storage.googleapis.com/minikube/releases.json"
+	NotifyMsg                 = make(chan string)
 )
 
 func MaybePrintUpdateTextFromGithub(output io.Writer) {
 	MaybePrintUpdateText(output, githubMinikubeReleasesURL, lastUpdateCheckFilePath)
+	NotifyMsg <- "finished checking for stuff"
 }
 
 func MaybePrintUpdateText(output io.Writer, url string, lastUpdatePath string) {

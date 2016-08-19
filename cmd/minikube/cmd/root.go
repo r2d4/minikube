@@ -18,6 +18,7 @@ package cmd
 
 import (
 	goflag "flag"
+	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -60,7 +61,14 @@ var RootCmd = &cobra.Command{
 			log.SetOutWriter(ioutil.Discard)
 			log.SetErrWriter(ioutil.Discard)
 		}
-		notify.MaybePrintUpdateTextFromGithub(os.Stdout)
+		go notify.MaybePrintUpdateTextFromGithub(os.Stdout)
+	},
+	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		msg, ok := <-notify.NotifyMsg
+		if ok {
+			fmt.Println(msg)
+		}
+		glog.Infof("persistent post done")
 	},
 }
 
