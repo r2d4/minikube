@@ -14,27 +14,18 @@
 # limitations under the License.
 
 apiVersion: v1
-kind: Pod
+kind: Service
 metadata:
-  name: kube-addon-manager
+  name: default-http-backend
   namespace: kube-system
   labels:
-    component: kube-addon-manager
-    version: v5.1
+    app: default-http-backend
+    kubernetes.io/cluster-service: "true"
 spec:
-  hostNetwork: true
-  containers:
-  - name: kube-addon-manager
-    image: gcr.io/google-containers/kube-addon-manager:v5.1
-    resources:
-      requests:
-        cpu: 5m
-        memory: 50Mi
-    volumeMounts:
-    - mountPath: /etc/kubernetes/
-      name: addons
-      readOnly: true
-  volumes:
-  - hostPath:
-      path: /etc/kubernetes/
-    name: addons
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 8080
+    nodePort: 30001
+  selector:
+    app: default-http-backend

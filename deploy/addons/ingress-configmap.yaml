@@ -14,27 +14,12 @@
 # limitations under the License.
 
 apiVersion: v1
-kind: Pod
+data:
+  map-hash-bucket-size: "128"
+kind: ConfigMap
 metadata:
-  name: kube-addon-manager
+  name: nginx-load-balancer-conf
   namespace: kube-system
   labels:
-    component: kube-addon-manager
-    version: v5.1
-spec:
-  hostNetwork: true
-  containers:
-  - name: kube-addon-manager
-    image: gcr.io/google-containers/kube-addon-manager:v5.1
-    resources:
-      requests:
-        cpu: 5m
-        memory: 50Mi
-    volumeMounts:
-    - mountPath: /etc/kubernetes/
-      name: addons
-      readOnly: true
-  volumes:
-  - hostPath:
-      path: /etc/kubernetes/
-    name: addons
+    kubernetes.io/cluster-service: "true"
+
