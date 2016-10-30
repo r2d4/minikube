@@ -20,40 +20,51 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/docker/machine/libmachine/drivers"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/drivers/kvm"
 )
 
-type kvmDriver struct {
-	*drivers.BaseDriver
+// type kvmDriver struct {
+// 	*drivers.BaseDriver
 
-	Memory         int
-	DiskSize       int
-	CPU            int
-	Network        string
-	PrivateNetwork string
-	ISO            string
-	Boot2DockerURL string
-	DiskPath       string
-	CacheMode      string
-	IOMode         string
-}
+// 	Memory         int
+// 	DiskSize       int
+// 	CPU            int
+// 	Network        string
+// 	PrivateNetwork string
+// 	ISO            string
+// 	Boot2DockerURL string
+// 	DiskPath       string
+// 	CacheMode      string
+// 	IOMode         string
+// }
 
-func createKVMHost(config MachineConfig) *kvmDriver {
-	return &kvmDriver{
-		BaseDriver: &drivers.BaseDriver{
-			MachineName: constants.MachineName,
-			StorePath:   constants.Minipath,
-		},
-		Memory:         config.Memory,
-		CPU:            config.CPUs,
-		Network:        config.KvmNetwork,
-		PrivateNetwork: "docker-machines",
-		Boot2DockerURL: config.GetISOFileURI(),
-		DiskSize:       config.DiskSize,
-		DiskPath:       filepath.Join(constants.Minipath, "machines", constants.MachineName, fmt.Sprintf("%s.img", constants.MachineName)),
-		ISO:            filepath.Join(constants.Minipath, "machines", constants.MachineName, "boot2docker.iso"),
-		CacheMode:      "default",
-		IOMode:         "threads",
+// func createKVMHost(config MachineConfig) *kvmDriver {
+// 	return &kvmDriver{
+// 		BaseDriver: &drivers.BaseDriver{
+// 			MachineName: constants.MachineName,
+// 			StorePath:   constants.Minipath,
+// 		},
+// 		Memory:         config.Memory,
+// 		CPU:            config.CPUs,
+// 		Network:        config.KvmNetwork,
+// 		PrivateNetwork: "docker-machines",
+// 		Boot2DockerURL: config.GetISOFileURI(),
+// 		DiskSize:       config.DiskSize,
+// 		DiskPath:       filepath.Join(constants.Minipath, "machines", constants.MachineName, fmt.Sprintf("%s.img", constants.MachineName)),
+// 		ISO:            filepath.Join(constants.Minipath, "machines", constants.MachineName, "boot2docker.iso"),
+// 		CacheMode:      "default",
+// 		IOMode:         "threads",
+// 	}
+// }
+
+func createKVMHost(config MachineConfig) *kvm.Driver {
+	//plugin.RegisterDriver(kvm.NewDriver())
+	return &kvm.Driver{
+		Memory:   config.Memory,
+		CPU:      config.CPUs,
+		DiskSize: config.DiskSize,
+		IsoUrl:   config.GetISOFileURI(),
+		DiskPath: filepath.Join(constants.Minipath, "machines", constants.MachineName, fmt.Sprintf("%s.img", constants.MachineName)),
 	}
 }
