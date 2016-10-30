@@ -19,7 +19,6 @@ package cluster
 import (
 	"bytes"
 	"crypto"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -29,14 +28,16 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
-	"time"
 
 	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/auth"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
+	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/state"
+	"github.com/docker/machine/libmachine/swarm"
 	"github.com/golang/glog"
 	download "github.com/jimmidyson/go-download"
 	"github.com/pkg/errors"
@@ -56,6 +57,8 @@ var (
 
 const fileScheme = "file"
 
+var certsDir = constants.Minipath
+
 //This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
 //INFO lvl logging is displayed due to the kubernetes api calling flag.Set("logtostderr", "true") in its init()
 //see: https://github.com/kubernetes/kubernetes/blob/master/pkg/util/logs.go#L32-34
@@ -64,40 +67,58 @@ func init() {
 }
 
 // StartHost starts a host VM.
-func StartHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
-	exists, err := api.Exists(constants.MachineName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Error checking if host exists: %s", constants.MachineName)
-	}
-	if !exists {
-		return createHost(api, config)
-	}
+func StartHost(config MachineConfig) (drivers.Driver, error) {
+	//TODO:r2d4 Exists
 
-	glog.Infoln("Machine exists!")
-	h, err := api.Load(constants.MachineName)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
-	}
+	return createMachine(config)
 
-	s, err := h.Driver.GetState()
+	driver := Load(config)
+
+	s, err := driver.GetState()
 	glog.Infoln("Machine state: ", s)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting state for host")
 	}
 
 	if s != state.Running {
-		if err := h.Driver.Start(); err != nil {
+		if err := driver.Start(); err != nil {
 			return nil, errors.Wrapf(err, "Error starting stopped host")
 		}
-		if err := api.Save(h); err != nil {
-			return nil, errors.Wrapf(err, "Error saving started host")
-		}
+		//TODO SAVE
 	}
 
-	if err := h.ConfigureAuth(); err != nil {
+	if err := Provision(config); err != nil {
 		return nil, errors.Wrap(&util.RetriableError{Err: err}, "Error configuring auth on host")
 	}
-	return h, nil
+	return driver, nil
+}
+
+func Provision(config MachineConfig) error {
+	//filestore := persist.NewFilestore(constants.Minipath, certsDir, certsDir)
+	driver := Load(config)
+	provisioner := provision.Boot2DockerProvisioner{
+		Driver: driver,
+	}
+
+	authOptions := auth.Options{
+		CertDir:   certsDir,
+		StorePath: certsDir,
+	}
+
+	engineOptions := engine.Options{
+		Env:              config.DockerEnv,
+		InsecureRegistry: config.InsecureRegistry,
+		RegistryMirror:   config.RegistryMirror,
+	}
+
+	swarmOptions := swarm.Options{}
+
+	err := provisioner.Provision(swarmOptions, authOptions, engineOptions)
+	if err != nil {
+		return errors.Wrap(err, "Error provisioning boot2docker machine")
+	}
+
+	return nil
 }
 
 // StopHost stops the host VM.
@@ -199,7 +220,7 @@ type KubernetesConfig struct {
 }
 
 // StartCluster starts a k8s cluster on the specified Host.
-func StartCluster(h sshAble, kubernetesConfig KubernetesConfig) error {
+func StartCluster(driver drivers.Driver, kubernetesConfig KubernetesConfig) error {
 	startCommand, err := GetStartCommand(kubernetesConfig)
 	if err != nil {
 		return errors.Wrapf(err, "Error generating start command: %s", err)
@@ -208,7 +229,7 @@ func StartCluster(h sshAble, kubernetesConfig KubernetesConfig) error {
 
 	for _, cmd := range commands {
 		glog.Infoln(cmd)
-		output, err := h.RunSSHCommand(cmd)
+		output, err := drivers.RunSSHCommandFromDriver(driver, cmd)
 		glog.Infoln(output)
 		if err != nil {
 			return errors.Wrapf(err, "Error running ssh command: %s", cmd)
@@ -218,7 +239,7 @@ func StartCluster(h sshAble, kubernetesConfig KubernetesConfig) error {
 	return nil
 }
 
-func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
+func UpdateCluster(d drivers.Driver, config KubernetesConfig) error {
 	client, err := sshutil.NewSSHClient(d)
 	if err != nil {
 		return errors.Wrap(err, "Error creating new ssh client")
@@ -303,16 +324,6 @@ func SetupCerts(d drivers.Driver) error {
 	return nil
 }
 
-func engineOptions(config MachineConfig) *engine.Options {
-
-	o := engine.Options{
-		Env:              config.DockerEnv,
-		InsecureRegistry: config.InsecureRegistry,
-		RegistryMirror:   config.RegistryMirror,
-	}
-	return &o
-}
-
 func createVirtualboxHost(config MachineConfig) drivers.Driver {
 	d := virtualbox.NewDriver(constants.MachineName, constants.Minipath)
 	d.Boot2DockerURL = config.GetISOFileURI()
@@ -387,54 +398,49 @@ func (m *MachineConfig) IsMinikubeISOCached() bool {
 	return true
 }
 
-func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
-	var driver interface{}
+// TODO read this from config file
+func Load(config MachineConfig) drivers.Driver {
+	switch config.VMDriver {
+	case "virtualbox":
+		return createVirtualboxHost(config)
+	case "vmwarefusion":
+		return createVMwareFusionHost(config)
+	case "kvm":
+		return createKVMHost(config)
+	case "xhyve":
+		return createXhyveHost(config)
+	case "hyperv":
+		return createHypervHost(config)
+	default:
+		glog.Exitf("Unsupported driver: %s\n", config.VMDriver)
+		return nil
+	}
+}
 
+func createMachine(config MachineConfig) (drivers.Driver, error) {
 	if config.ShouldCacheMinikubeISO() {
 		if err := config.CacheMinikubeISOFromURL(); err != nil {
 			return nil, errors.Wrap(err, "Error attempting to cache minikube iso from url")
 		}
 	}
 
-	switch config.VMDriver {
-	case "virtualbox":
-		driver = createVirtualboxHost(config)
-	case "vmwarefusion":
-		driver = createVMwareFusionHost(config)
-	case "kvm":
-		driver = createKVMHost(config)
-	case "xhyve":
-		driver = createXhyveHost(config)
-	case "hyperv":
-		driver = createHypervHost(config)
-	default:
-		glog.Exitf("Unsupported driver: %s\n", config.VMDriver)
+	d := Load(config)
+	glog.Infof("Using machine config: %+v", config)
+	if err := d.PreCreateCheck(); err != nil {
+		return nil, err
+	}
+	if err := d.Create(); err != nil {
+		return d, errors.Wrap(err, "Error creating machine")
 	}
 
-	data, err := json.Marshal(driver)
+	//TODO SAVE
+
+	err := Provision(config)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error marshalling json")
+		return nil, err
 	}
 
-	h, err := api.NewHost(config.VMDriver, data)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error creating new host")
-	}
-
-	h.HostOptions.AuthOptions.CertDir = constants.Minipath
-	h.HostOptions.AuthOptions.StorePath = constants.Minipath
-	h.HostOptions.EngineOptions = engineOptions(config)
-
-	if err := api.Create(h); err != nil {
-		// Wait for all the logs to reach the client
-		time.Sleep(2 * time.Second)
-		return nil, errors.Wrap(err, "Error creating host")
-	}
-
-	if err := api.Save(h); err != nil {
-		return nil, errors.Wrap(err, "Error attempting to save")
-	}
-	return h, nil
+	return d, nil
 }
 
 // GetHostDockerEnv gets the necessary docker env variables to allow the use of docker through minikube's vm

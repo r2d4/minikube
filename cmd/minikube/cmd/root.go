@@ -36,7 +36,7 @@ import (
 var dirs = [...]string{
 	constants.Minipath,
 	constants.MakeMiniPath("certs"),
-	constants.MakeMiniPath("machines"),
+	constants.MakeMiniPath("machines", "minikube"),
 	constants.MakeMiniPath("cache"),
 	constants.MakeMiniPath("cache", "iso"),
 	constants.MakeMiniPath("cache", "localkube"),

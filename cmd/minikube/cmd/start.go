@@ -23,8 +23,7 @@ import (
 	"strings"
 
 	units "github.com/docker/go-units"
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/host"
+	"github.com/docker/machine/libmachine/drivers"
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -68,8 +67,6 @@ assumes you already have Virtualbox installed.`,
 
 func runStart(cmd *cobra.Command, args []string) {
 	fmt.Println("Starting local Kubernetes cluster...")
-	api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
-	defer api.Close()
 
 	config := cluster.MachineConfig{
 		MinikubeISO:         viper.GetString(isoURL),
@@ -85,9 +82,9 @@ func runStart(cmd *cobra.Command, args []string) {
 		KvmNetwork:          viper.GetString(kvmNetwork),
 	}
 
-	var host *host.Host
+	var driver drivers.Driver
 	start := func() (err error) {
-		host, err = cluster.StartHost(api, config)
+		driver, err = cluster.StartHost(config)
 		if err != nil {
 			glog.Errorf("Error starting host: %s. Retrying.\n", err)
 		}
@@ -99,7 +96,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
-	ip, err := host.Driver.GetIP()
+	ip, err := driver.GetIP()
 	if err != nil {
 		glog.Errorln("Error starting host: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
@@ -111,22 +108,22 @@ func runStart(cmd *cobra.Command, args []string) {
 		NetworkPlugin:     viper.GetString(networkPlugin),
 		ExtraOptions:      extraOptions,
 	}
-	if err := cluster.UpdateCluster(host, host.Driver, kubernetesConfig); err != nil {
+	if err := cluster.UpdateCluster(driver, kubernetesConfig); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
-	if err := cluster.SetupCerts(host.Driver); err != nil {
+	if err := cluster.SetupCerts(driver); err != nil {
 		glog.Errorln("Error configuring authentication: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
-	if err := cluster.StartCluster(host, kubernetesConfig); err != nil {
+	if err := cluster.StartCluster(driver, kubernetesConfig); err != nil {
 		glog.Errorln("Error starting cluster: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
-	kubeHost, err := host.Driver.GetURL()
+	kubeHost, err := driver.GetURL()
 	if err != nil {
 		glog.Errorln("Error connecting to cluster: ", err)
 	}
