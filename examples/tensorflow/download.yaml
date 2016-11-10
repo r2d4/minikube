@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: download-mnist-data
+spec:
+  template:
+    metadata:
+      name: download-mnist-data
+    spec:
+      containers:
+      - name: download-mnist-data
+        image: tensorflow/tf_grpc_test_server
+        imagePullPolicy: IfNotPresent
+        command: 
+          - python
+          - /var/tf-k8s/python/mnist_replica.py
+        args:
+          - --download_only
+        volumeMounts:
+        - name: shared
+          mountPath: /tmp
+      volumes:
+      - name: shared
+        hostPath:
+          path: /shared
+      restartPolicy: Never
