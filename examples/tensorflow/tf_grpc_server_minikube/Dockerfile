@@ -7,4 +7,4 @@ COPY grpc_tensorflow_server_wrapper.sh
 COPY grpc_tensorflow_server.py
 
 
-ENTRYPOINT 
+ENTRYPOINT ["grpc_tensorflow_server_wrapper.sh"]

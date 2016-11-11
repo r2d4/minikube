@@ -21,7 +21,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   capacity:
-    storage: 5Gi
+    storage: 10Gi
   hostPath:
     path: /data/pv0001/
 ---
@@ -40,35 +40,70 @@ spec:
         pod.alpha.kubernetes.io/initialized: "true"
         pod.alpha.kubernetes.io/init-containers: '[
             {
-                "name": "install",
-                "image": "busybox",
-                "imagePullPolicy": "IfNotPresent",
-                "command": ["/bin/sh", "-c"],
-                "args": ["export INDEX=${HOSTNAME##*-}"]
+                "name": "tf-bootstrap",
+                "image": "tf-bootstrap",
+                "args": [
+                  "--data-dir=/data",
+                  "--data-urls=" 
+                  "--work-dir=/work-dir"
+                ],
+                "volumeMounts": [
+                    {
+                        "name": "tf-shared",
+                        "mountPath": "/data"
+                    },
+                    {
+                        "name": "workdir",
+                        "mountPath": "/work-dir"
+                    }
+                ]
+            },
+            {
+                "name": "peer-finder",
+                "image": "alpine:3.4",
+                "command": ["/work-dir/peer-finder"],
+                "args": ["-on-start=\"/work-dir/on-start.sh\"", "-service=tf-worker"],
+                "env": [
+                  {
+                      "name": "POD_NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                   }
+                ],
+                "volumeMounts": [
+                    {
+                        "name": "workdir",
+                        "mountPath": "/work-dir"
+                    }
+                ]
             }
         ]'
     spec:
       terminationGracePeriodSeconds: 0
       containers:
       - name: tf-worker
-        image: tensorflow/tf_grpc_test_server
-        args:
-          - --cluster_spec=worker|tf-worker0:2222;tf-worker1:2222,ps|tf-ps0:2222"
-          - --task_id=$INDEX
-          - --job_name=worker
+        image: tf_grpc_server_minikube
+        args: ["--job_name=worker"]
         ports:
         - containerPort: 2222
           name: tf-worker
         volumeMounts:
-        - name: tf-worker-shared
+        - name: tf-shared
           mountPath: /data
+        volumes:
+        - name: workdir
+          emptyDir: {}
   volumeClaimTemplates:
   - metadata:
-      name: tf-worker-shared
+      name: tf-shared
       annotations:
         volume.alpha.kubernetes.io/storage-class: anything
     spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
-          storage: 1Gi
+          storage: 2Gi
