@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: train-mnist-data-1
+spec:
+  template:
+    metadata:
+      name: train-mnist-data-1
+    spec:
+      containers:
+      - name: train-mnist-data-1
+        image: tensorflow/tf_grpc_test_server
+        imagePullPolicy: IfNotPresent
+        command: 
+          - python
+          - /var/tf-k8s/python/mnist_replica.py
+        args:
+          - --job_name=worker
+          - --task_index=0
+          - --task_id=1
+          - --num_gpus=0
+          - --sync_replicas=False
+          - --ps_hosts tf-ps-0.default.svc.cluster.local
+          - --worker_hosts tf-worker-0.default.svc.cluster.local,tf-worker-1.default.svc.cluster.local
+          - 2>&1 | tee worker-1.log
+        volumeMounts:
+        - name: tf-data
+          mountPath: /tmp
+      volumes:
+      - name: tf-data
+        persistentVolumeClaim:
+          claimName: tf-data
+      restartPolicy: Never
+          

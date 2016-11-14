@@ -30,7 +30,6 @@ spec:
       containers:
       - name: tf-worker
         image: tensorflow/tf_grpc_test_server
-        imagePullPolicy: IfNotPresent
         args:
           - --cluster_spec=worker|tf-worker-0:2222;tf-worker-1:2222,ps|tf-ps-0:2222
           - --job_name=worker
@@ -47,7 +46,7 @@ spec:
           path: /shared
       - name: tf-data
         persistentVolumeClaim:
-          name: tf-data
+          claimName: tf-data
 ---
 apiVersion: v1
 kind: Service
@@ -81,7 +80,6 @@ spec:
       containers:
       - name: tf-ps
         image: tensorflow/tf_grpc_test_server
-        imagePullPolicy: IfNotPresent
         args:
           - --cluster_spec=worker|tf-worker-0:2222;tf-worker-1:2222,ps|tf-ps-0:2222
           - --job_name=ps

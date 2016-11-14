@@ -1,10 +1,7 @@
-FROM alpine:3.4
-
-RUN curl -sSL -o /peer-finder https://storage.googleapis.com/kubernetes-release/pets/peer-finder
+FROM gcr.io/google_containers/peer-finder:0.1
 
 COPY on-start.sh /
-COPY install.sh /
 
-RUN chmod -c 775 /install.sh /on-start.sh /peer-finder
+RUN chmod -c 775 /on-start.sh /peer-finder
 
-ENTRYPOINT ["/install.sh"]
+ENTRYPOINT ["/peer-finder"]
