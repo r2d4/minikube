@@ -15,19 +15,12 @@ spec:
           - python
           - /var/tf-k8s/python/mnist_replica.py
         args:
-          - --job_name=worker
-          - --task_index=0
           - --download_only
-          - --num_gpus=0
-          - --sync_replicas=False
-          - --ps_hosts tf-ps-0.default.svc.cluster.local
-          - --worker_hosts tf-worker-0.default.svc.cluster.local,tf-worker-1.default.svc.cluster.local
         volumeMounts:
-        - name: tf-data
+        - name: shared
           mountPath: /tmp
       volumes:
-      - name: tf-data
-        persistentVolumeClaim:
-          claimName: tf-data
+      - name: shared
+        hostPath:
+          path: /shared
       restartPolicy: Never
-          
