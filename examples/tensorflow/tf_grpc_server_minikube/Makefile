@@ -1,4 +1,4 @@
-NAME = tensorflow/tf_grpc_test_server
+NAME = tensorflow/tf_grpc_minikube
 
 .PHONY: all build
 

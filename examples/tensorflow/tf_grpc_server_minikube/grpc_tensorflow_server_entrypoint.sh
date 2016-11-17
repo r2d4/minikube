@@ -1,8 +1,5 @@
 #!/bin/bash
 
-LOG_FILE="/tmp/grpc_tensorflow_server.log"
-touch "${LOG_FILE}"
-
 SCRIPT_DIR=$( cd ${0%/*} && pwd -P )
 
 # When running as a k8s StatefulSet, 
@@ -35,9 +32,9 @@ TASK_ID=${HOSTNAME##*-}
 # 	sleep 1;
 # done
 
-PS_SPEC=$(cat /work-dir/ps_spec)
+#PS_SPEC=$(cat /work-dir/ps_spec)
 
-CLUSTER_SPEC=${PS_SPEC};${WORKER_SPEC}
-
+#CLUSTER_SPEC=${PS_SPEC};${WORKER_SPEC}
+echo "python /grpc_tensorflow_server.py --task-id=${TASK_ID} $@"
 # Start the server and log
-python grpc_tensorflow_server.py --task_id=TASK_ID $@ 2>&1 | tee "${LOG_FILE}"
+python /grpc_tensorflow_server.py --task_id="${TASK_ID}" "$@"

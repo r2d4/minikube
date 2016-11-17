@@ -30,7 +30,7 @@ import sys
 # Python package of TensorFlow installed on it.
 
 
-DEFAULT_DOCKER_IMAGE = 'tensorflow/tf_grpc_test_server'
+DEFAULT_DOCKER_IMAGE = 'tensorflow/tf_grpc_minikube'
 DEFAULT_PORT = 2222
 
 DNS_SUFFIX="default.svc.cluster.local"
@@ -72,9 +72,11 @@ spec:
       containers:
       - name: tf-{job_name}
         image: {docker_image}
+        imagePullPolicy: IfNotPresent
         args:
           - --cluster_spec={cluster_spec}
           - --job_name={job_name}
+          - --verbose=True
         ports:
         - containerPort: {port}
         volumeMounts:

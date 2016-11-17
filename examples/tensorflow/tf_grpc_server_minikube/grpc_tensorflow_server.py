@@ -64,8 +64,7 @@ def parse_cluster_spec(cluster_spec, cluster):
   Raises:
     ValueError: if the cluster_spec string is invalid.
   """
-
-  job_strings = cluster_spec.split(";")
+  job_strings = cluster_spec.split(",")
 
   if not cluster_spec:
     raise ValueError("Empty cluster_spec string")
@@ -86,7 +85,7 @@ def parse_cluster_spec(cluster_spec, cluster):
     if FLAGS.verbose:
       print("Added job named \"%s\"" % job_name)
 
-    job_tasks = job_string.split("|")[1].split(",")
+    job_tasks = job_string.split("|")[1].split(";")
     for i in range(len(job_tasks)):
       if not job_tasks[i]:
         raise ValueError("Empty task string at position %d" % i)

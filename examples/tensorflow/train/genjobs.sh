@@ -4,6 +4,7 @@ rm -r ./jobs
 mkdir ./jobs
 for i in `seq 0 $1`
 do
-  cat train.yaml.txt | sed "s/\$IDX/$i/" > ./jobs/train-$i.yaml
+  cat train.yaml.txt | sed "s/\$IDX/$i/" 
+  echo -e "\n---"
 done
 
