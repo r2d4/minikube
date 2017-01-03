@@ -1,8 +1,8 @@
-FROM tensorflow/tf_grpc_test_server
+FROM tensorflow/tensorflow:0.12.0
 
-# A wrapper script that will call the server
-COPY grpc_tensorflow_server_entrypoint.sh /
-RUN chmod -c 775 /grpc_tensorflow_server_entrypoint.sh
+COPY tf_grpc.py /
 
-ENTRYPOINT ["/grpc_tensorflow_server_entrypoint.sh"]
+RUN chmod -c 775 /tf_grpc.py
+
+ENTRYPOINT ["/tf_grpc.py"]
 
