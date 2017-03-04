@@ -1050,12 +1050,12 @@
 		},
 		{
 			"ImportPath": "github.com/gogo/protobuf/proto",
-			"Comment": "v0.2-33-ge18d7aa8",
+			"Comment": "v0.2-33-ge18d7aa",
 			"Rev": "e18d7aa8f8c624c915db340349aad4c49b10d173"
 		},
 		{
 			"ImportPath": "github.com/gogo/protobuf/sortkeys",
-			"Comment": "v0.2-33-ge18d7aa8",
+			"Comment": "v0.2-33-ge18d7aa",
 			"Rev": "e18d7aa8f8c624c915db340349aad4c49b10d173"
 		},
 		{
@@ -1437,18 +1437,6 @@
 			"ImportPath": "github.com/kr/pty",
 			"Comment": "release.r56-29-gf7ee69f",
 			"Rev": "f7ee69f31298ecbe5d2b349c711e2547a617d398"
-		},
-		{
-			"ImportPath": "github.com/kubernetes-incubator/external-storage/lib/controller",
-			"Rev": "2cc0e17eef57e05dc8aaa6fdbdf60aca84989193"
-		},
-		{
-			"ImportPath": "github.com/kubernetes-incubator/external-storage/lib/leaderelection",
-			"Rev": "2cc0e17eef57e05dc8aaa6fdbdf60aca84989193"
-		},
-		{
-			"ImportPath": "github.com/kubernetes-incubator/external-storage/lib/leaderelection/resourcelock",
-			"Rev": "2cc0e17eef57e05dc8aaa6fdbdf60aca84989193"
 		},
 		{
 			"ImportPath": "github.com/lpabon/godbc",
@@ -2145,6 +2133,10 @@
 			"Rev": "8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9"
 		},
 		{
+			"ImportPath": "golang.org/x/sys/windows",
+			"Rev": "8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9"
+		},
+		{
 			"ImportPath": "golang.org/x/sys/windows/registry",
 			"Rev": "8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9"
 		},
@@ -2689,11 +2681,6 @@
 			"Rev": "89c60099837a47cfce19bd14e2d1f16c4670fd58"
 		},
 		{
-			"ImportPath": "k8s.io/client-go/pkg/third_party/forked/golang/json",
-			"Comment": "v2.0.0-alpha.0-9-g89c6009",
-			"Rev": "89c60099837a47cfce19bd14e2d1f16c4670fd58"
-		},
-		{
 			"ImportPath": "k8s.io/client-go/pkg/third_party/forked/golang/reflect",
 			"Comment": "v2.0.0-alpha.0-9-g89c6009",
 			"Rev": "89c60099837a47cfce19bd14e2d1f16c4670fd58"
@@ -2720,11 +2707,6 @@
 		},
 		{
 			"ImportPath": "k8s.io/client-go/pkg/util/clock",
-			"Comment": "v2.0.0-alpha.0-9-g89c6009",
-			"Rev": "89c60099837a47cfce19bd14e2d1f16c4670fd58"
-		},
-		{
-			"ImportPath": "k8s.io/client-go/pkg/util/diff",
 			"Comment": "v2.0.0-alpha.0-9-g89c6009",
 			"Rev": "89c60099837a47cfce19bd14e2d1f16c4670fd58"
 		},
@@ -2804,11 +2786,6 @@
 			"Rev": "89c60099837a47cfce19bd14e2d1f16c4670fd58"
 		},
 		{
-			"ImportPath": "k8s.io/client-go/pkg/util/strategicpatch",
-			"Comment": "v2.0.0-alpha.0-9-g89c6009",
-			"Rev": "89c60099837a47cfce19bd14e2d1f16c4670fd58"
-		},
-		{
 			"ImportPath": "k8s.io/client-go/pkg/util/uuid",
 			"Comment": "v2.0.0-alpha.0-9-g89c6009",
 			"Rev": "89c60099837a47cfce19bd14e2d1f16c4670fd58"
@@ -2879,11 +2856,6 @@
 			"Rev": "89c60099837a47cfce19bd14e2d1f16c4670fd58"
 		},
 		{
-			"ImportPath": "k8s.io/client-go/tools/cache",
-			"Comment": "v2.0.0-alpha.0-9-g89c6009",
-			"Rev": "89c60099837a47cfce19bd14e2d1f16c4670fd58"
-		},
-		{
 			"ImportPath": "k8s.io/client-go/tools/clientcmd",
 			"Comment": "v2.0.0-alpha.0-9-g89c6009",
 			"Rev": "89c60099837a47cfce19bd14e2d1f16c4670fd58"
@@ -2905,11 +2877,6 @@
 		},
 		{
 			"ImportPath": "k8s.io/client-go/tools/metrics",
-			"Comment": "v2.0.0-alpha.0-9-g89c6009",
-			"Rev": "89c60099837a47cfce19bd14e2d1f16c4670fd58"
-		},
-		{
-			"ImportPath": "k8s.io/client-go/tools/record",
 			"Comment": "v2.0.0-alpha.0-9-g89c6009",
 			"Rev": "89c60099837a47cfce19bd14e2d1f16c4670fd58"
 		},

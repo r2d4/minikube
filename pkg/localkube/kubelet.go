@@ -17,8 +17,10 @@ limitations under the License.
 package localkube
 
 import (
-	kubelet "k8s.io/kubernetes/cmd/kubelet/app"
+	"k8s.io/kubernetes/cmd/kubelet/app"
 	"k8s.io/kubernetes/cmd/kubelet/app/options"
+	"k8s.io/kubernetes/pkg/kubelet"
+	"k8s.io/kubernetes/pkg/volume"
 )
 
 func (lk LocalkubeServer) NewKubeletServer() Server {
@@ -62,7 +64,22 @@ func StartKubeletServer(lk LocalkubeServer) func() error {
 		config.ResolverConfig = "/etc/resolv.conf"
 	}
 
+	vps := app.ProbeVolumePlugins("")
+	// Filter out the hostpath provisioner
+	allVolumePlugins := vps[:0]
+	for _, vp := range vps {
+		if vp.GetPluginName() != "hostPathPluginName" {
+			allVolumePlugins = append(allVolumePlugins, vp)
+		}
+	}
+
+	// Add our custom hostpath provisioner
+	allVolumePlugins = append(allVolumePlugins, ProbeVolumePlugin(&volume.VolumeConfig{}))
+	kubeDeps := &kubelet.KubeletDeps{
+		volumePlugins: allVolumePlugins,
+	}
+
 	return func() error {
-		return kubelet.Run(config, nil)
+		return app.Run(config, kubeDeps)
 	}
 }
