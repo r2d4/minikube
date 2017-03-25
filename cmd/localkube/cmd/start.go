@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/signal"
 
@@ -44,6 +45,14 @@ func StartLocalkube() {
 		hostIP, _ := Server.GetHostIP()
 		fmt.Println("localkube host ip: ", hostIP.String())
 		os.Exit(0)
+	}
+
+	glog.Infof("Localkube version: %s", version.GetVersion())
+	versionFile, err := ioutil.ReadFile("/etc/VERSION")
+	if err != nil {
+		glog.Warningf("Warning: Could not find /etc/VERSION: %s", err)
+	} else {
+		glog.Infoln("Minikube ISO version: %s", versionFile)
 	}
 
 	// Get the etcd logger for the api repo
