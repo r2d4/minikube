@@ -13,8 +13,8 @@ go_library(
     srcs = ["tcp.go"],
     tags = ["automanaged"],
     deps = [
-        "//pkg/probe:go_default_library",
-        "//vendor:github.com/golang/glog",
+        "//vendor/github.com/golang/glog:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/probe:go_default_library",
     ],
 )
 

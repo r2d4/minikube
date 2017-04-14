@@ -1,0 +1,8 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["generate.go"],
+    visibility = ["//visibility:public"],
+    deps = ["//vendor/k8s.io/apimachinery/pkg/util/rand:go_default_library"],
+)

@@ -1,0 +1,15 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "error.go",
+        "wait.go",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/vmware/govmomi/property:go_default_library",
+        "//vendor/github.com/vmware/govmomi/vim25/progress:go_default_library",
+        "//vendor/github.com/vmware/govmomi/vim25/types:go_default_library",
+    ],
+)

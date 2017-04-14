@@ -12,7 +12,7 @@ go_library(
     name = "go_default_library",
     srcs = ["object_cache.go"],
     tags = ["automanaged"],
-    deps = ["//vendor:k8s.io/client-go/tools/cache"],
+    deps = ["//vendor/k8s.io/client-go/tools/cache:go_default_library"],
 )
 
 go_test(

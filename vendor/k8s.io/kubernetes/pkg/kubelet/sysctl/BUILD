@@ -17,12 +17,12 @@ go_library(
     ],
     tags = ["automanaged"],
     deps = [
-        "//pkg/api/v1:go_default_library",
-        "//pkg/api/validation:go_default_library",
-        "//pkg/apis/extensions/validation:go_default_library",
-        "//pkg/kubelet/container:go_default_library",
-        "//pkg/kubelet/dockertools:go_default_library",
-        "//pkg/kubelet/lifecycle:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/api/v1:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/api/validation:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/apis/extensions/validation:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/kubelet/container:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/kubelet/dockertools:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/kubelet/lifecycle:go_default_library",
     ],
 )
 

@@ -30,13 +30,13 @@ go_library(
     srcs = ["storage.go"],
     tags = ["automanaged"],
     deps = [
-        "//pkg/api:go_default_library",
-        "//pkg/registry/cachesize:go_default_library",
-        "//pkg/registry/core/endpoint:go_default_library",
-        "//vendor:k8s.io/apimachinery/pkg/runtime",
-        "//vendor:k8s.io/apiserver/pkg/registry/generic",
-        "//vendor:k8s.io/apiserver/pkg/registry/generic/registry",
-        "//vendor:k8s.io/apiserver/pkg/registry/rest",
+        "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
+        "//vendor/k8s.io/apiserver/pkg/registry/generic:go_default_library",
+        "//vendor/k8s.io/apiserver/pkg/registry/generic/registry:go_default_library",
+        "//vendor/k8s.io/apiserver/pkg/registry/rest:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/api:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/registry/cachesize:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/registry/core/endpoint:go_default_library",
     ],
 )
 

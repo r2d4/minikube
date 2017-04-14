@@ -12,9 +12,9 @@ go_library(
     srcs = ["factory_interfaces.go"],
     tags = ["automanaged"],
     deps = [
-        "//pkg/client/clientset_generated/internalclientset:go_default_library",
-        "//vendor:k8s.io/apimachinery/pkg/runtime",
-        "//vendor:k8s.io/client-go/tools/cache",
+        "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
+        "//vendor/k8s.io/client-go/tools/cache:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset:go_default_library",
     ],
 )
 

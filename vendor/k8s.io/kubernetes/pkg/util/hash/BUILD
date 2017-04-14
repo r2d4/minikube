@@ -12,7 +12,7 @@ go_library(
     name = "go_default_library",
     srcs = ["hash.go"],
     tags = ["automanaged"],
-    deps = ["//vendor:github.com/davecgh/go-spew/spew"],
+    deps = ["//vendor/github.com/davecgh/go-spew/spew:go_default_library"],
 )
 
 go_test(

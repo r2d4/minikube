@@ -16,14 +16,14 @@ go_library(
     ],
     tags = ["automanaged"],
     deps = [
-        "//pkg/api:go_default_library",
-        "//pkg/cloudprovider:go_default_library",
-        "//pkg/cloudprovider/providers/aws:go_default_library",
-        "//pkg/cloudprovider/providers/gce:go_default_library",
-        "//pkg/kubeapiserver/admission:go_default_library",
-        "//pkg/volume:go_default_library",
-        "//vendor:k8s.io/apimachinery/pkg/apis/meta/v1",
-        "//vendor:k8s.io/apiserver/pkg/admission",
+        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
+        "//vendor/k8s.io/apiserver/pkg/admission:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/api:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/cloudprovider:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/cloudprovider/providers/aws:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/cloudprovider/providers/gce:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/kubeapiserver/admission:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/volume:go_default_library",
     ],
 )
 

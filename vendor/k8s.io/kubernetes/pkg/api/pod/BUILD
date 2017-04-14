@@ -12,7 +12,7 @@ go_library(
     name = "go_default_library",
     srcs = ["util.go"],
     tags = ["automanaged"],
-    deps = ["//pkg/api:go_default_library"],
+    deps = ["//vendor/k8s.io/kubernetes/pkg/api:go_default_library"],
 )
 
 filegroup(

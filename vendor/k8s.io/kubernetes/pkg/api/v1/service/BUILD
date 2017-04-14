@@ -16,9 +16,9 @@ go_library(
     ],
     tags = ["automanaged"],
     deps = [
-        "//pkg/api/v1:go_default_library",
-        "//pkg/util/net/sets:go_default_library",
-        "//vendor:github.com/golang/glog",
+        "//vendor/github.com/golang/glog:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/api/v1:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/util/net/sets:go_default_library",
     ],
 )
 

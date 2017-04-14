@@ -16,10 +16,10 @@ go_library(
     ],
     tags = ["automanaged"],
     deps = [
-        "//pkg/api/v1:go_default_library",
-        "//pkg/features:go_default_library",
-        "//pkg/util:go_default_library",
-        "//vendor:k8s.io/apiserver/pkg/util/feature",
+        "//vendor/k8s.io/apiserver/pkg/util/feature:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/api/v1:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/features:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/util:go_default_library",
     ],
 )
 

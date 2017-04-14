@@ -16,13 +16,13 @@ go_library(
     ],
     tags = ["automanaged"],
     deps = [
-        "//pkg/api/v1:go_default_library",
-        "//pkg/volume:go_default_library",
-        "//pkg/volume/util/operationexecutor:go_default_library",
-        "//pkg/volume/util/types:go_default_library",
-        "//pkg/volume/util/volumehelper:go_default_library",
-        "//vendor:github.com/golang/glog",
-        "//vendor:k8s.io/apimachinery/pkg/types",
+        "//vendor/github.com/golang/glog:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/types:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/api/v1:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/volume:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/volume/util/operationexecutor:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/volume/util/types:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/volume/util/volumehelper:go_default_library",
     ],
 )
 

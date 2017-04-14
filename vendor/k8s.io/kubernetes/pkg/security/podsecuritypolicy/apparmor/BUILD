@@ -13,10 +13,10 @@ go_library(
     srcs = ["strategy.go"],
     tags = ["automanaged"],
     deps = [
-        "//pkg/api:go_default_library",
-        "//pkg/security/apparmor:go_default_library",
-        "//pkg/util/maps:go_default_library",
-        "//vendor:k8s.io/apimachinery/pkg/util/validation/field",
+        "//vendor/k8s.io/apimachinery/pkg/util/validation/field:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/api:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/security/apparmor:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/util/maps:go_default_library",
     ],
 )
 

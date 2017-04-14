@@ -13,9 +13,9 @@ go_library(
     srcs = ["helpers.go"],
     tags = ["automanaged"],
     deps = [
-        "//pkg/apis/authorization:go_default_library",
-        "//vendor:k8s.io/apiserver/pkg/authentication/user",
-        "//vendor:k8s.io/apiserver/pkg/authorization/authorizer",
+        "//vendor/k8s.io/apiserver/pkg/authentication/user:go_default_library",
+        "//vendor/k8s.io/apiserver/pkg/authorization/authorizer:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/apis/authorization:go_default_library",
     ],
 )
 

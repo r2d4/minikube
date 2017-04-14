@@ -12,9 +12,9 @@ go_library(
     srcs = ["latest.go"],
     tags = ["automanaged"],
     deps = [
-        "//pkg/apis/abac:go_default_library",
-        "//pkg/apis/abac/v0:go_default_library",
-        "//pkg/apis/abac/v1beta1:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/apis/abac:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/apis/abac/v0:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/apis/abac/v1beta1:go_default_library",
     ],
 )
 

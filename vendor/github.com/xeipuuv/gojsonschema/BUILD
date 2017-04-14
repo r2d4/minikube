@@ -1,0 +1,24 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "errors.go",
+        "format_checkers.go",
+        "internalLog.go",
+        "jsonContext.go",
+        "jsonLoader.go",
+        "locales.go",
+        "result.go",
+        "schema.go",
+        "schemaPool.go",
+        "schemaReferencePool.go",
+        "schemaType.go",
+        "subSchema.go",
+        "types.go",
+        "utils.go",
+        "validation.go",
+    ],
+    visibility = ["//visibility:public"],
+    deps = ["//vendor/github.com/xeipuuv/gojsonreference:go_default_library"],
+)

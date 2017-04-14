@@ -1,0 +1,15 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "builtin.go",
+        "delegating.go",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/k8s.io/apiserver/pkg/authorization/authorizer:go_default_library",
+        "//vendor/k8s.io/apiserver/plugin/pkg/authorizer/webhook:go_default_library",
+        "//vendor/k8s.io/client-go/kubernetes/typed/authorization/v1beta1:go_default_library",
+    ],
+)

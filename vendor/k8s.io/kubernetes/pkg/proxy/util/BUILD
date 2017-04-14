@@ -13,8 +13,8 @@ go_library(
     srcs = ["conntrack.go"],
     tags = ["automanaged"],
     deps = [
-        "//pkg/util/exec:go_default_library",
-        "//vendor:github.com/golang/glog",
+        "//vendor/github.com/golang/glog:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/util/exec:go_default_library",
     ],
 )
 

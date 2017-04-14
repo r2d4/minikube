@@ -24,10 +24,10 @@ go_library(
     srcs = ["initializer.go"],
     tags = ["automanaged"],
     deps = [
-        "//pkg/client/clientset_generated/internalclientset:go_default_library",
-        "//pkg/client/informers/informers_generated/internalversion:go_default_library",
-        "//vendor:k8s.io/apiserver/pkg/admission",
-        "//vendor:k8s.io/apiserver/pkg/authorization/authorizer",
+        "//vendor/k8s.io/apiserver/pkg/admission:go_default_library",
+        "//vendor/k8s.io/apiserver/pkg/authorization/authorizer:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/client/informers/informers_generated/internalversion:go_default_library",
     ],
 )
 

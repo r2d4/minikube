@@ -1,0 +1,17 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "config.go",
+        "host_config.go",
+        "hostconfig_unix.go",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/docker/engine-api/types/blkiodev:go_default_library",
+        "//vendor/github.com/docker/engine-api/types/strslice:go_default_library",
+        "//vendor/github.com/docker/go-connections/nat:go_default_library",
+        "//vendor/github.com/docker/go-units:go_default_library",
+    ],
+)

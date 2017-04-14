@@ -1,0 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "aggregator.go",
+        "doc.go",
+        "prefix.go",
+        "reader.go",
+        "report.go",
+        "scale.go",
+        "sinker.go",
+        "tee.go",
+    ],
+    visibility = ["//visibility:public"],
+)

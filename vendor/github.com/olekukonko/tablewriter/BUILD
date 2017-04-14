@@ -1,0 +1,13 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "csv.go",
+        "table.go",
+        "util.go",
+        "wrap.go",
+    ],
+    visibility = ["//visibility:public"],
+    deps = ["//vendor/github.com/mattn/go-runewidth:go_default_library"],
+)

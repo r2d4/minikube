@@ -15,14 +15,14 @@ go_library(
     ],
     tags = ["automanaged"],
     deps = [
-        "//pkg/kubelet/api:go_default_library",
-        "//pkg/kubelet/api/v1alpha1/runtime:go_default_library",
-        "//pkg/kubelet/dockershim:go_default_library",
-        "//pkg/util/exec:go_default_library",
-        "//pkg/util/interrupt:go_default_library",
-        "//vendor:github.com/golang/glog",
-        "//vendor:golang.org/x/net/context",
-        "//vendor:google.golang.org/grpc",
+        "//vendor/github.com/golang/glog:go_default_library",
+        "//vendor/golang.org/x/net/context:go_default_library",
+        "//vendor/google.golang.org/grpc:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/kubelet/api:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/kubelet/dockershim:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/util/exec:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/util/interrupt:go_default_library",
     ],
 )
 

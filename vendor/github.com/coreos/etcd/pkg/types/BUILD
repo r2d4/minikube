@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "doc.go",
+        "id.go",
+        "set.go",
+        "slice.go",
+        "urls.go",
+        "urlsmap.go",
+    ],
+    visibility = ["//visibility:public"],
+)

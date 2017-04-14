@@ -13,8 +13,8 @@ go_library(
     srcs = ["work_queue.go"],
     tags = ["automanaged"],
     deps = [
-        "//vendor:k8s.io/apimachinery/pkg/types",
-        "//vendor:k8s.io/client-go/util/clock",
+        "//vendor/k8s.io/apimachinery/pkg/types:go_default_library",
+        "//vendor/k8s.io/client-go/util/clock:go_default_library",
     ],
 )
 

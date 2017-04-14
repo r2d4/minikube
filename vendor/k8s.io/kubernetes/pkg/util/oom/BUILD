@@ -18,8 +18,8 @@ go_library(
     ],
     tags = ["automanaged"],
     deps = [
-        "//pkg/kubelet/cm/util:go_default_library",
-        "//vendor:github.com/golang/glog",
+        "//vendor/github.com/golang/glog:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/kubelet/cm/util:go_default_library",
     ],
 )
 

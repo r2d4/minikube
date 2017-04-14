@@ -12,8 +12,8 @@ go_library(
     srcs = ["interface.go"],
     tags = ["automanaged"],
     deps = [
-        "//pkg/client/informers/informers_generated/internalversion/internalinterfaces:go_default_library",
-        "//pkg/client/informers/informers_generated/internalversion/storage/internalversion:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/client/informers/informers_generated/internalversion/internalinterfaces:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/client/informers/informers_generated/internalversion/storage/internalversion:go_default_library",
     ],
 )
 

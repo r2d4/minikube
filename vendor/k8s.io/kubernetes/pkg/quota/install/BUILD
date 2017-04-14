@@ -12,10 +12,10 @@ go_library(
     srcs = ["registry.go"],
     tags = ["automanaged"],
     deps = [
-        "//pkg/client/clientset_generated/clientset:go_default_library",
-        "//pkg/client/informers/informers_generated/externalversions:go_default_library",
-        "//pkg/quota:go_default_library",
-        "//pkg/quota/evaluator/core:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/client/clientset_generated/clientset:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/client/informers/informers_generated/externalversions:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/quota:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/quota/evaluator/core:go_default_library",
     ],
 )
 

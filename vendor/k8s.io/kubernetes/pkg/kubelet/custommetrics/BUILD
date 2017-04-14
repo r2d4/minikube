@@ -12,7 +12,7 @@ go_library(
     name = "go_default_library",
     srcs = ["custom_metrics.go"],
     tags = ["automanaged"],
-    deps = ["//pkg/api/v1:go_default_library"],
+    deps = ["//vendor/k8s.io/kubernetes/pkg/api/v1:go_default_library"],
 )
 
 go_test(

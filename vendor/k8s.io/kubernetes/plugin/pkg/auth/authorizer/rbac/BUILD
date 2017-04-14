@@ -16,12 +16,12 @@ go_library(
     ],
     tags = ["automanaged"],
     deps = [
-        "//pkg/apis/rbac:go_default_library",
-        "//pkg/registry/rbac/validation:go_default_library",
-        "//vendor:github.com/golang/glog",
-        "//vendor:k8s.io/apimachinery/pkg/util/errors",
-        "//vendor:k8s.io/apiserver/pkg/authentication/user",
-        "//vendor:k8s.io/apiserver/pkg/authorization/authorizer",
+        "//vendor/github.com/golang/glog:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/util/errors:go_default_library",
+        "//vendor/k8s.io/apiserver/pkg/authentication/user:go_default_library",
+        "//vendor/k8s.io/apiserver/pkg/authorization/authorizer:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/apis/rbac:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/registry/rbac/validation:go_default_library",
     ],
 )
 

@@ -13,9 +13,9 @@ go_library(
     srcs = ["taints.go"],
     tags = ["automanaged"],
     deps = [
-        "//pkg/api:go_default_library",
-        "//pkg/api/v1:go_default_library",
-        "//vendor:k8s.io/apimachinery/pkg/util/validation",
+        "//vendor/k8s.io/apimachinery/pkg/util/validation:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/api:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/api/v1:go_default_library",
     ],
 )
 

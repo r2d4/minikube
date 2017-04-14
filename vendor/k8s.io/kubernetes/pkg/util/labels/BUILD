@@ -15,7 +15,7 @@ go_library(
         "labels.go",
     ],
     tags = ["automanaged"],
-    deps = ["//vendor:k8s.io/apimachinery/pkg/apis/meta/v1"],
+    deps = ["//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library"],
 )
 
 go_test(

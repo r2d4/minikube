@@ -29,12 +29,12 @@ go_library(
     srcs = ["bootstrap.go"],
     tags = ["automanaged"],
     deps = [
-        "//pkg/api:go_default_library",
-        "//pkg/bootstrap/api:go_default_library",
-        "//pkg/client/listers/core/internalversion:go_default_library",
-        "//vendor:github.com/golang/glog",
-        "//vendor:k8s.io/apimachinery/pkg/api/errors",
-        "//vendor:k8s.io/apiserver/pkg/authentication/user",
+        "//vendor/github.com/golang/glog:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/api/errors:go_default_library",
+        "//vendor/k8s.io/apiserver/pkg/authentication/user:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/api:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/bootstrap/api:go_default_library",
+        "//vendor/k8s.io/kubernetes/pkg/client/listers/core/internalversion:go_default_library",
     ],
 )
 
