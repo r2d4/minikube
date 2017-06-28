@@ -23,7 +23,7 @@ BUILDROOT_BRANCH ?= 2017.02
 REGISTRY?=gcr.io/k8s-minikube
 
 MINIKUBE_BUILD_IMAGE 	?= karalabe/xgo-1.8.3
-LOCALKUBE_BUILD_IMAGE 	?= gcr.io/google_containers/kube-cross:v1.7.1-0
+LOCALKUBE_BUILD_IMAGE 	?= gcr.io/google_containers/kube-cross:v1.8.3-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
 ISO_VERSION ?= v0.22.0
@@ -57,6 +57,7 @@ MINIKUBE_ENV_DARWIN  := CC=o64-clang CXX=o64-clang++ CGO_ENABLED=1 GOARCH=amd64 
 MINIKUBE_ENV_WINDOWS := CGO_ENABLED=0 GOARCH=amd64 GOOS=windows
 
 MINIKUBE_DOCKER_CMD := docker run -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) --workdir /go/src/$(REPOPATH) --entrypoint /bin/bash -v $(PWD):/go/src/$(REPOPATH) $(MINIKUBE_BUILD_IMAGE) -c
+<<<<<<< HEAD
 KUBE_CROSS_DOCKER_CMD := docker run -w /go/src/$(REPOPATH) --user $(shell id -u):$(shell id -g) -e IN_DOCKER=1 -v $(shell pwd):/go/src/$(REPOPATH) $(LOCALKUBE_BUILD_IMAGE)
 
 # $(call MINIKUBE_GO_BUILD_CMD, output file, OS)
@@ -64,6 +65,17 @@ define MINIKUBE_GO_BUILD_CMD
 	$($(shell echo MINIKUBE_ENV_$(2) | tr a-z A-Z)) go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(1) k8s.io/minikube/cmd/minikube
 endef
 
+=======
+KUBE_CROSS_DOCKER_CMD := docker run -w /go/src/$(REPOPATH) --user $(shell id -u):$(shell id -g) -e IN_DOCKER=1 -v $(shell pwd):/go/src/$(REPOPATH) --entrypoint /bin/bash $(LOCALKUBE_BUILD_IMAGE) -c
+
+# $(call MINIKUBE_GO_BUILD_CMD, output file, OS)
+define MINIKUBE_GO_BUILD_CMD
+	$($(shell echo MINIKUBE_ENV_$(2) | tr a-z A-Z)) go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -o $(1) k8s.io/minikube/cmd/minikube
+endef
+
+LOCALKUBE_BUILD_CMD := CGO_ENABLED=1 go build -tags static_build -ldflags=$(LOCALKUBE_LDFLAGS) -o $(BUILD_DIR)/localkube ./cmd/localkube
+
+>>>>>>> 7908dc681... Update makefile for 1.7
 ifeq ($(BUILD_IN_DOCKER),y)
 	MINIKUBE_BUILD_IN_DOCKER=y
 	LOCALKUBE_BUILD_IN_DOCKER=y
@@ -74,9 +86,12 @@ ifneq ($(BUILD_OS),Linux)
 	LOCALKUBE_BUILD_IN_DOCKER=y
 endif
 
+<<<<<<< HEAD
 # If we are already running in docker, 
 # prevent recursion by unsetting the BUILD_IN_DOCKER directives.
 # The _BUILD_IN_DOCKER variables should not be modified after this conditional.
+=======
+>>>>>>> 7908dc681... Update makefile for 1.7
 ifeq ($(IN_DOCKER),1)
 	MINIKUBE_BUILD_IN_DOCKER=n
 	LOCALKUBE_BUILD_IN_DOCKER=n
@@ -90,9 +105,15 @@ out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 
 out/localkube: $(shell $(LOCALKUBEFILES))
 ifeq ($(LOCALKUBE_BUILD_IN_DOCKER),y)
+<<<<<<< HEAD
 	$(KUBE_CROSS_DOCKER_CMD) make $@
 else
 	CGO_ENABLED=1 go build -tags static_build -ldflags=$(LOCALKUBE_LDFLAGS) -o $(BUILD_DIR)/localkube ./cmd/localkube
+=======
+	$(KUBE_CROSS_DOCKER_CMD) '$(LOCALKUBE_BUILD_CMD)'
+else
+	$(LOCALKUBE_BUILD_CMD)
+>>>>>>> 7908dc681... Update makefile for 1.7
 endif
 
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
@@ -119,7 +140,7 @@ out/minikube.iso: $(shell find deploy/iso/minikube-iso -type f)
 ifeq ($(IN_DOCKER),1)
 	$(MAKE) minikube_iso
 else
-	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt $(ISO_DOCKER_EXTRA_ARGS) \
+	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt \
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
 		$(ISO_BUILD_IMAGE) /usr/bin/make out/minikube.iso
 endif
@@ -212,7 +233,7 @@ localkube-image: out/localkube
 
 buildroot-image: $(ISO_BUILD_IMAGE) # convenient alias to build the docker container
 $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
-	docker build $(ISO_DOCKER_EXTRA_ARGS) -t $@ -f $< $(dir $<)
+	docker build -t $@ -f $< $(dir $<)
 	@echo ""
 	@echo "$(@) successfully built"
 
