@@ -31,6 +31,8 @@ _testmain.go
 #iso version file
 deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
 
+/bin
+
 /pkg/minikube/assets/assets.go
 /minikube
 

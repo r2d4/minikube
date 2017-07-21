@@ -32,6 +32,7 @@ ISO_BUCKET ?= minikube/iso
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 BUILD_DIR ?= ./out
+BUILD_DIR_BIN := $(BUILD_DIR)/bin
 ORG := k8s.io
 REPOPATH ?= $(ORG)/minikube
 
@@ -66,6 +67,9 @@ MINIKUBE_ENV_DARWIN_DOCKER := CC=o64-clang CXX=o64-clang++
 
 MINIKUBE_DOCKER_CMD := docker run -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) --workdir /go/src/$(REPOPATH) --entrypoint /bin/bash -v $(PWD):/go/src/$(REPOPATH) $(MINIKUBE_BUILD_IMAGE) -c
 KUBE_CROSS_DOCKER_CMD := docker run -w /go/src/$(REPOPATH) --user $(shell id -u):$(shell id -g) -e IN_DOCKER=1 -v $(shell pwd):/go/src/$(REPOPATH) $(LOCALKUBE_BUILD_IMAGE)
+
+TAR_TARGETS := bin/kubeadm bin/kubelet $(shell find deploy/services -type f)
+
 
 # $(call MINIKUBE_GO_BUILD_CMD, output file, OS)
 define MINIKUBE_GO_BUILD_CMD
@@ -132,6 +136,20 @@ else
 		$(ISO_BUILD_IMAGE) /usr/bin/make out/minikube.iso
 endif
 
+bin/kubeadm: bin
+	curl -Lo $@ https://storage.googleapis.com/kubernetes-release/release/v1.5.6/bin/linux/amd64/kubeadm
+	chmod +x $@
+
+bin/kubelet: bin
+	curl -Lo $@ https://storage.googleapis.com/kubernetes-release/release/v1.5.6/bin/linux/amd64/kubelet
+	chmod +x $@
+
+bin:
+	mkdir -p bin
+
+out/minikube.tar: $(TAR_TARGETS)
+	tar -cvf out/minikube.tar $(TAR_TARGETS)
+
 test-iso:
 	go test -v $(REPOPATH)/test/integration --tags=iso --minikube-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/rootfs.iso9660"
 
@@ -158,6 +176,10 @@ pkg/minikube/assets/assets.go: out/localkube $(GOPATH)/bin/go-bindata $(shell fi
 
 $(GOPATH)/bin/go-bindata:
 	GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
+
+.PHONY: extract
+extract:
+	tar -C $(HOME)/.minikube -xvf out/minikube.tar
 
 .PHONY: cross
 cross: out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
