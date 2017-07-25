@@ -189,9 +189,24 @@ out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
 TAR_TARGETS_linux   := out/minikube-linux-amd64
 TAR_TARGETS_darwin  := out/minikube-darwin-amd64
 TAR_TARGETS_windows := out/minikube-windows-amd64.exe
-TAR_TARGETS_ALL     := $(shell find deploy/addons -type f)
+TAR_TARGETS_ALL     := $(shell find deploy/addons deploy/services -type f) out/kubeadm/bin/kubeadm out/kubeadm/bin/kubelet
 out/minikube-%-amd64.tar.gz: $$(TAR_TARGETS_$$*) $(TAR_TARGETS_ALL)
 	tar -cvf $@ $^
+
+out/kubeadm/bin/kubeadm: out/kubeadm/bin
+	curl -Lo $@ https://storage.googleapis.com/kubernetes-release/release/v1.7.1/bin/linux/amd64/kubeadm
+	chmod +x $@
+
+out/kubeadm/bin/kubelet: out/kubeadm/bin
+	curl -Lo $@ https://storage.googleapis.com/kubernetes-release/release/v1.7.1/bin/linux/amd64/kubelet
+	chmod +x $@
+
+out/kubeadm/bin:
+	mkdir -p out/kubeadm/bin
+
+PHONY: extract
+extract: out/minikube-linux-amd64.tar.gz
+	tar -C $(HOME)/.minikube -xvf out/minikube-linux-amd64.tar.gz
 	
 out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	rm -rf out/windows_tmp

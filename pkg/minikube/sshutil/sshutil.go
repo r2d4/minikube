@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
@@ -29,6 +30,8 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/util"
 )
 
 // SSHSession provides methods for running commands on a host.
@@ -128,6 +131,33 @@ func Transfer(reader io.Reader, readerLen int, remotedir, filename string, perm 
 	wg.Wait()
 
 	return nil
+}
+
+func TransferHostFolderToVM(src, dst string, client *ssh.Client) error {
+	files := []CopyableFile{}
+	searchDir := constants.MakeMiniPath(src)
+	err := filepath.Walk(searchDir, func(srcFile string, f os.FileInfo, err error) error {
+		isDir, err := util.IsDirectory(srcFile)
+		if err != nil {
+			return err
+		}
+		if !isDir {
+			f, err := NewFileAsset(srcFile, dst, filepath.Base(srcFile), "0640")
+			if err == nil {
+				return err
+			}
+			files = append(files, f)
+		}
+		return nil
+	})
+
+	for _, f := range files {
+		if err := TransferFile(f, client); err != nil {
+			return err
+		}
+	}
+
+	return err
 }
 
 func RunCommand(c *ssh.Client, cmd string) error {

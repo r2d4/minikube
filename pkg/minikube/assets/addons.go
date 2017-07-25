@@ -182,23 +182,3 @@ func AddMinikubeAddonsDirToAssets(assetList *[]CopyableFile) {
 		glog.Infoln("Error encountered while walking .minikube/addons: ", err)
 	}
 }
-
-func AddMinikubeDirToAssets(src, dst string) ([]CopyableFile, error) {
-	files := []CopyableFile{}
-	searchDir := constants.MakeMiniPath(src)
-	err := filepath.Walk(searchDir, func(srcFile string, f os.FileInfo, err error) error {
-		isDir, err := util.IsDirectory(srcFile)
-		if err != nil {
-			return err
-		}
-		if !isDir {
-			f, err := NewFileAsset(srcFile, dst, filepath.Base(srcFile), "0640")
-			if err == nil {
-				return err
-			}
-			files = append(files, f)
-		}
-		return nil
-	})
-	return files, err
-}
