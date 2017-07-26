@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package localkube
 
 import (
 	"fmt"
@@ -27,13 +27,16 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util"
 )
 
+const fileScheme = "file"
+
 // localkubeCacher is a struct with methods designed for caching localkube
 type localkubeCacher struct {
-	k8sConf KubernetesConfig
+	k8sConf cluster.KubernetesConfig
 }
 
 func (l *localkubeCacher) getLocalkubeCacheFilepath() string {
@@ -64,6 +67,11 @@ func (l *localkubeCacher) downloadAndCacheLocalkube() error {
 	}
 	fmt.Println("Downloading localkube binary")
 	return download.ToFile(url, l.getLocalkubeCacheFilepath(), opts)
+}
+
+func localkubeURIWasSpecified(config cluster.KubernetesConfig) bool {
+	// see if flag is different than default -> it was passed by user
+	return config.KubernetesVersion != constants.DefaultKubernetesVersion
 }
 
 func (l *localkubeCacher) fetchLocalkubeFromURI() (assets.CopyableFile, error) {

@@ -25,6 +25,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	cmdUtil "k8s.io/minikube/cmd/util"
+	lkboot "k8s.io/minikube/pkg/minikube/boostrapper/localkube"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -62,7 +63,8 @@ var statusCmd = &cobra.Command{
 		ls := state.None.String()
 		ks := state.None.String()
 		if ms == state.Running.String() {
-			ls, err = cluster.GetLocalkubeStatus(api)
+			lk := &lkboot.LocalkubeBootstrapper{}
+			ls, err = lk.GetClusterStatus(api)
 			if err != nil {
 				glog.Errorln("Error localkube status:", err)
 				cmdUtil.MaybeReportErrorAndExit(err)

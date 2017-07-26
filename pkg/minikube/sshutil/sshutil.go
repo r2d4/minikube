@@ -134,7 +134,7 @@ func Transfer(reader io.Reader, readerLen int, remotedir, filename string, perm 
 }
 
 func TransferHostFolderToVM(src, dst string, client *ssh.Client) error {
-	files := []CopyableFile{}
+	files := []assets.CopyableFile{}
 	searchDir := constants.MakeMiniPath(src)
 	err := filepath.Walk(searchDir, func(srcFile string, f os.FileInfo, err error) error {
 		isDir, err := util.IsDirectory(srcFile)
@@ -142,7 +142,7 @@ func TransferHostFolderToVM(src, dst string, client *ssh.Client) error {
 			return err
 		}
 		if !isDir {
-			f, err := NewFileAsset(srcFile, dst, filepath.Base(srcFile), "0640")
+			f, err := assets.NewFileAsset(srcFile, dst, filepath.Base(srcFile), "0640")
 			if err == nil {
 				return err
 			}
