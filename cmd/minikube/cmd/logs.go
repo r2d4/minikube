@@ -23,7 +23,6 @@ import (
 
 	"github.com/spf13/cobra"
 	cmdUtil "k8s.io/minikube/cmd/util"
-	lkboot "k8s.io/minikube/pkg/minikube/boostrapper/localkube"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -43,8 +42,7 @@ var logsCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		defer api.Close()
-		lk := &lkboot.LocalkubeBootstrapper{}
-		s, err := lk.GetClusterLogs(api, follow)
+		s, err := bootstrapper.GetClusterLogs(api, follow)
 		if err != nil {
 			log.Println("Error getting machine logs:", err)
 			cmdUtil.MaybeReportErrorAndExit(err)

@@ -32,7 +32,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdUtil "k8s.io/minikube/cmd/util"
-	lkboot "k8s.io/minikube/pkg/minikube/boostrapper/localkube"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -145,7 +144,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	kubernetesConfig := cluster.KubernetesConfig{
 		KubernetesVersion: viper.GetString(kubernetesVersion),
-		Bootstrapper:      &lkboot.LocalkubeBootstrapper{},
+		Bootstrapper:      bootstrapper,
 		NodeIP:            ip,
 		APIServerName:     viper.GetString(apiServerName),
 		DNSDomain:         viper.GetString(dnsDomain),

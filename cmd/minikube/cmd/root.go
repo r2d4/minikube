@@ -30,6 +30,7 @@ import (
 	"github.com/spf13/viper"
 	configCmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/cmd/util"
+	"k8s.io/minikube/pkg/minikube/boostrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/notify"
@@ -50,6 +51,8 @@ var dirs = [...]string{
 var (
 	enableUpdateNotification = true
 )
+
+var bootstrapper = &kubeadm.KubeadmBootstrapper{}
 
 var viperWhiteList = []string{
 	"v",

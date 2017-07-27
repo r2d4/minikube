@@ -62,6 +62,8 @@ MINIKUBE_ENV_darwin_DOCKER 	:= CC=o64-clang CXX=o64-clang++
 MINIKUBE_DOCKER_CMD := docker run -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) --workdir /go/src/$(REPOPATH) --entrypoint /bin/bash -v $(PWD):/go/src/$(REPOPATH) $(MINIKUBE_BUILD_IMAGE) -c
 KUBE_CROSS_DOCKER_CMD := docker run -w /go/src/$(REPOPATH) --user $(shell id -u):$(shell id -g) -e IN_DOCKER=1 -v $(shell pwd):/go/src/$(REPOPATH) $(LOCALKUBE_BUILD_IMAGE)
 
+CNI_RELEASE := 0799f5732f2a11b329d9e3d51b9c8f2e3759f2ff
+
 # $(call MINIKUBE_GO_BUILD_CMD, output file, OS)
 define MINIKUBE_GO_BUILD_CMD
 	$(MINIKUBE_ENV_$(2)) go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(1) k8s.io/minikube/cmd/minikube
@@ -189,7 +191,7 @@ out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
 TAR_TARGETS_linux   := out/minikube-linux-amd64
 TAR_TARGETS_darwin  := out/minikube-darwin-amd64
 TAR_TARGETS_windows := out/minikube-windows-amd64.exe
-TAR_TARGETS_ALL     := $(shell find deploy/addons deploy/services -type f) out/kubeadm/bin/kubeadm out/kubeadm/bin/kubelet
+TAR_TARGETS_ALL     := $(shell find deploy/addons deploy/services -type f) out/kubeadm/bin/kubeadm out/kubeadm/bin/kubelet out/kubeadm/cni-amd64-$(CNI_RELEASE).tar.gz
 out/minikube-%-amd64.tar.gz: $$(TAR_TARGETS_$$*) $(TAR_TARGETS_ALL)
 	tar -cvf $@ $^
 
@@ -200,6 +202,10 @@ out/kubeadm/bin/kubeadm: out/kubeadm/bin
 out/kubeadm/bin/kubelet: out/kubeadm/bin
 	curl -Lo $@ https://storage.googleapis.com/kubernetes-release/release/v1.7.1/bin/linux/amd64/kubelet
 	chmod +x $@
+
+out/kubeadm/cni-amd64-$(CNI_RELEASE).tar.gz: out/kubeadm/bin
+	mkdir -p out/kubeadm/opt/cni
+	curl -sSL https://storage.googleapis.com/kubernetes-release/network-plugins/cni-amd64-$(CNI_RELEASE).tar.gz | tar -xzvf -C out/kubeadm/opt/cni
 
 out/kubeadm/bin:
 	mkdir -p out/kubeadm/bin
