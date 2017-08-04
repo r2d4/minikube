@@ -27,10 +27,10 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers"
 	machinessh "github.com/docker/machine/libmachine/ssh"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // SSHSession provides methods for running commands on a host.
@@ -134,8 +134,7 @@ func Transfer(reader io.Reader, readerLen int, remotedir, filename string, perm 
 
 func TransferMinikubeFolderToVM(src, dst, perm string, client *ssh.Client) error {
 	files := []assets.CopyableFile{}
-	searchDir := constants.MakeMiniPath(src)
-	err := filepath.Walk(searchDir, func(srcFile string, f os.FileInfo, err error) error {
+	err := filepath.Walk(src, func(srcFile string, f os.FileInfo, err error) error {
 		if !f.IsDir() {
 			f, err := assets.NewFileAsset(srcFile, dst, filepath.Base(srcFile), perm)
 			if err != nil {
@@ -163,6 +162,21 @@ func RunCommand(c *ssh.Client, cmd string) error {
 	}
 
 	return s.Run(cmd)
+}
+
+func RunCommandOutput(c *ssh.Client, cmd string) (string, error) {
+	s, err := c.NewSession()
+	defer s.Close()
+	if err != nil {
+		return "", errors.Wrap(err, "Error creating new session for ssh client")
+	}
+	o, err := s.CombinedOutput(cmd)
+	if err != nil {
+		return "", errors.Wrapf(err, "running ssh cmd: %s", cmd)
+	}
+	out := string(o)
+	glog.Infof("SSH Command: %s\n Output: %s", cmd, out)
+	return out, nil
 }
 
 type sshHost struct {

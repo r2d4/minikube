@@ -191,8 +191,7 @@ out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
 TAR_TARGETS_linux   := out/minikube-linux-amd64
 TAR_TARGETS_darwin  := out/minikube-darwin-amd64
 TAR_TARGETS_windows := out/minikube-windows-amd64.exe
-TAR_TARGETS_ALL     := $(shell find deploy/addons deploy/services -type f) out/kubeadm/bin/kubeadm out/kubeadm/bin/kubelet out/kubeadm/cni-amd64-$(CNI_RELEASE).tar.gz
-out/minikube-%-amd64.tar.gz: $$(TAR_TARGETS_$$*) $(TAR_TARGETS_ALL)
+out/minikube-%-amd64.tar.gz: $$(TAR_TARGETS_$$*) $(shell find deploy/addons deploy/services -type f) out/kubeadm/bin/kubeadm out/kubeadm/bin/kubelet
 	tar -cvf $@ $^
 
 out/kubeadm/bin/kubeadm: out/kubeadm/bin
@@ -202,10 +201,6 @@ out/kubeadm/bin/kubeadm: out/kubeadm/bin
 out/kubeadm/bin/kubelet: out/kubeadm/bin
 	curl -Lo $@ https://storage.googleapis.com/kubernetes-release/release/v1.7.1/bin/linux/amd64/kubelet
 	chmod +x $@
-
-out/kubeadm/cni-amd64-$(CNI_RELEASE).tar.gz: out/kubeadm/bin
-	mkdir -p out/kubeadm/opt/cni
-	curl -sSL https://storage.googleapis.com/kubernetes-release/network-plugins/cni-amd64-$(CNI_RELEASE).tar.gz | tar -xzvf -C out/kubeadm/opt/cni
 
 out/kubeadm/bin:
 	mkdir -p out/kubeadm/bin

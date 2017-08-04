@@ -124,6 +124,9 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     mkdir -p /mnt/$PARTNAME/var/lib/cni
     ln -s /mnt/$PARTNAME/var/lib/cni /var/lib/cni
 
+    mkdir -p /mnt/$PARTNAME/etc/kubernetes
+    ln -s /mnt/$PARTNAME/etc/kubernetes /etc/kubernetes
+
     mkdir -p /mnt/$PARTNAME/data
     ln -s /mnt/$PARTNAME/data /data
 

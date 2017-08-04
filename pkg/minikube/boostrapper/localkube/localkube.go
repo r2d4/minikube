@@ -20,41 +20,61 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/drivers"
+	"golang.org/x/crypto/ssh"
+
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/boostrapper"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 )
 
 // LocalkubeBootstrapper starts and updates a localkube backed cluster.
-type LocalkubeBootstrapper struct{}
+type LocalkubeBootstrapper struct {
+	c *ssh.Client
+	s *ssh.Session
+}
+
+func (l *LocalkubeBootstrapper) RunCommand(cmd string) (string, error) {
+	var err error
+	if l.s == nil {
+		l.s, err = l.c.NewSession()
+		if err != nil {
+			return "", errors.Wrap(err, "getting ssh session")
+		}
+	}
+	o, err := l.s.CombinedOutput(cmd)
+	if err != nil {
+		return "", errors.Wrapf(err, "running ssh cmd: %s", cmd)
+	}
+	out := string(o)
+	glog.V(7).Infof("SSH Command: %s\n Output: %s", cmd, out)
+
+	return out, nil
+}
 
 // StartCluster starts a k8s cluster on the specified Host.
-func (*LocalkubeBootstrapper) StartCluster(api libmachine.API, kubernetesConfig cluster.KubernetesConfig) error {
-	h, err := cluster.CheckIfApiExistsAndLoad(api)
-	if err != nil {
-		return errors.Wrap(err, "Error checking that api exists and loading it")
-	}
-
+func (l *LocalkubeBootstrapper) StartCluster(kubernetesConfig bootstrapper.KubernetesConfig) error {
 	startCommand, err := GetStartCommand(kubernetesConfig)
 	if err != nil {
 		return errors.Wrapf(err, "Error generating start command: %s", err)
 	}
-	glog.Infoln(startCommand)
-	output, err := cluster.RunCommand(h, startCommand, true)
-	glog.Infoln(output)
+
+	l.RunCommand(startCommand)
 	if err != nil {
 		return errors.Wrapf(err, "Error running ssh command: %s", startCommand)
 	}
 	return nil
 }
 
-func (*LocalkubeBootstrapper) UpdateCluster(d drivers.Driver, config cluster.KubernetesConfig) error {
+func (l *LocalkubeBootstrapper) RestartCluster(kubernetesConfig bootstrapper.KubernetesConfig) error {
+	return l.StartCluster(kubernetesConfig)
+}
+
+//TODO(mrick) get rid of driver dependency here
+func (l *LocalkubeBootstrapper) UpdateCluster(config bootstrapper.KubernetesConfig, drivername string) error {
 	copyableFiles := []assets.CopyableFile{}
 	var localkubeFile assets.CopyableFile
 	var err error
@@ -85,7 +105,7 @@ func (*LocalkubeBootstrapper) UpdateCluster(d drivers.Driver, config cluster.Kub
 		}
 	}
 
-	if d.DriverName() == "none" {
+	if drivername == "none" {
 		// transfer files to correct place on filesystem
 		for _, f := range copyableFiles {
 			if err := assets.CopyFileLocal(f); err != nil {
@@ -95,14 +115,8 @@ func (*LocalkubeBootstrapper) UpdateCluster(d drivers.Driver, config cluster.Kub
 		return nil
 	}
 
-	// transfer files to vm via SSH
-	client, err := sshutil.NewSSHClient(d)
-	if err != nil {
-		return errors.Wrap(err, "Error creating new ssh client")
-	}
-
 	for _, f := range copyableFiles {
-		if err := sshutil.TransferFile(f, client); err != nil {
+		if err := sshutil.TransferFileSSHSession(f, l.s); err != nil {
 			return err
 		}
 	}
@@ -110,12 +124,8 @@ func (*LocalkubeBootstrapper) UpdateCluster(d drivers.Driver, config cluster.Kub
 }
 
 // GetClusterStatus gets the status of localkube from the host VM.
-func (*LocalkubeBootstrapper) GetClusterStatus(api libmachine.API) (string, error) {
-	h, err := cluster.CheckIfApiExistsAndLoad(api)
-	if err != nil {
-		return "", err
-	}
-	s, err := cluster.RunCommand(h, localkubeStatusCommand, false)
+func (l *LocalkubeBootstrapper) GetClusterStatus() (string, error) {
+	s, err := l.RunCommand(localkubeStatusCommand)
 	if err != nil {
 		return "", err
 	}
@@ -131,27 +141,13 @@ func (*LocalkubeBootstrapper) GetClusterStatus(api libmachine.API) (string, erro
 
 // GetClusterLogs gets the localkube logs of the host VM.
 // If follow is specified, it will tail the logs
-func (*LocalkubeBootstrapper) GetClusterLogs(api libmachine.API, follow bool) (string, error) {
-	h, err := cluster.CheckIfApiExistsAndLoad(api)
-	if err != nil {
-		return "", errors.Wrap(err, "Error checking that api exists and loading it")
-	}
+func (l *LocalkubeBootstrapper) GetClusterLogs(follow bool) (string, error) {
 	logsCommand, err := GetLogsCommand(follow)
 	if err != nil {
 		return "", errors.Wrap(err, "Error getting logs command")
 	}
-	if follow {
-		c, err := h.CreateSSHClient()
-		if err != nil {
-			return "", errors.Wrap(err, "Error creating ssh client")
-		}
-		err = c.Shell(logsCommand)
-		if err != nil {
-			return "", errors.Wrap(err, "error ssh shell")
-		}
-		return "", err
-	}
-	s, err := cluster.RunCommand(h, logsCommand, false)
+
+	s, err := l.RunCommand(logsCommand)
 
 	if err != nil {
 		return s, err

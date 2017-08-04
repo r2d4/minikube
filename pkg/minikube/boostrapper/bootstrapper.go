@@ -1,14 +1,24 @@
 package bootstrapper
 
-import (
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/drivers"
-	"k8s.io/minikube/pkg/minikube/cluster"
-)
+import "k8s.io/minikube/pkg/util"
 
 type Bootstrapper interface {
-	StartCluster(api libmachine.API, k8s cluster.KubernetesConfig) error
-	UpdateCluster(d drivers.Driver, ck8s cluster.KubernetesConfig) error
-	GetClusterLogs(api libmachine.API, follow bool) (string, error)
-	GetClusterStatus(api libmachine.API) (string, error)
+	StartCluster(KubernetesConfig) error
+	UpdateCluster(cfg KubernetesConfig, drivername string) error
+	RestartCluster(cfg KubernetesConfig) error
+	GetClusterLogs(follow bool) (string, error)
+	GetClusterStatus() (string, error)
+}
+
+// KubernetesConfig contains the parameters used to configure the VM Kubernetes.
+type KubernetesConfig struct {
+	KubernetesVersion string
+	NodeIP            string
+	NodeName          string
+	APIServerName     string
+	DNSDomain         string
+	ContainerRuntime  string
+	NetworkPlugin     string
+	FeatureGates      string
+	ExtraOptions      util.ExtraOptionSlice
 }

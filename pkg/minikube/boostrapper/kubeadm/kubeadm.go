@@ -1,65 +1,150 @@
 package kubeadm
 
 import (
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/drivers"
+	"bytes"
+	"fmt"
+	"html/template"
+	"path/filepath"
+
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/cluster"
+	"golang.org/x/crypto/ssh"
+	"k8s.io/minikube/pkg/minikube/boostrapper"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
+	"k8s.io/minikube/pkg/util"
 )
 
-type KubeadmBootstrapper struct{}
+type KubeadmBootstrapper struct {
+	c *ssh.Client
+}
 
-func (*KubeadmBootstrapper) StartCluster(api libmachine.API, k8s cluster.KubernetesConfig) error {
-	//Runs "start localkube""
+func NewKubeadmBootstrapper(c *ssh.Client) *KubeadmBootstrapper {
+	k := &KubeadmBootstrapper{c: c}
+	return k
+}
+
+func (k *KubeadmBootstrapper) RestartCluster(k8s bootstrapper.KubernetesConfig) error {
+	tmpFile := "/tmp/cert.conf"
+
+	restartTmpl := "sudo /usr/bin/kubeadm alpha phase kubeconfig client-certs"
+	restartTmpl += " --cert-dir {{.CertDir}}"
+	restartTmpl += " --server {{.IP}}"
+	restartTmpl += " --client-name {{.MachineName}}"
+
+	// Output to temp file, since we will have to write this file to a few places.
+	restartTmpl += " > " + tmpFile
+	t := template.Must(template.New("restartTmpl").Parse(restartTmpl))
+
+	opts := struct {
+		CertDir     string
+		IP          string
+		MachineName string
+	}{
+		CertDir:     util.DefaultCertPath,
+		IP:          k8s.NodeIP,
+		MachineName: k8s.NodeName,
+	}
+
+	b := bytes.Buffer{}
+	if err := t.Execute(&b, opts); err != nil {
+		return err
+	}
+
+	_, err := sshutil.RunCommandOutput(k.c, b.String())
+	if err != nil {
+		return err
+	}
+
+	dsts := []string{"admin.conf", "controller-manager.conf", "kubelet.conf", "scheduler.conf"}
+	for _, dst := range dsts {
+		cmd := fmt.Sprintf("sudo cp %s %s", tmpFile, filepath.Join("/etc", "kubernetes", dst))
+		_, err := sshutil.RunCommandOutput(k.c, cmd)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
 
-func (*KubeadmBootstrapper) UpdateCluster(d drivers.Driver, k8s cluster.KubernetesConfig) error {
-	// "copies localkube into vm"
-	// adds minikube addons to directory
-	if err := moveFiles(d); err != nil {
+func (k *KubeadmBootstrapper) StartCluster(k8s bootstrapper.KubernetesConfig) error {
+	kubeadmTmpl := "sudo /usr/bin/kubeadm init"
+	kubeadmTmpl += " --cert-dir {{.CertDir}}"
+	kubeadmTmpl += " --service-cidr {{.ServiceCIDR}}"
+	kubeadmTmpl += " --apiserver-advertise-address {{.AdvertiseAddress}}"
+	kubeadmTmpl += " --apiserver-bind-port {{.APIServerPort}}"
+	t := template.Must(template.New("kubeadmTmpl").Parse(kubeadmTmpl))
+
+	opts := struct {
+		CertDir          string
+		ServiceCIDR      string
+		AdvertiseAddress string
+		APIServerPort    int
+	}{
+		CertDir:          util.DefaultCertPath,
+		ServiceCIDR:      util.DefaultServiceCIDR,
+		AdvertiseAddress: k8s.NodeIP,
+		APIServerPort:    util.APIServerPort,
+	}
+
+	b := bytes.Buffer{}
+	if err := t.Execute(&b, opts); err != nil {
+		return err
+	}
+
+	_, err := sshutil.RunCommandOutput(k.c, b.String())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (k *KubeadmBootstrapper) UpdateCluster(k8s bootstrapper.KubernetesConfig, drivername string) error {
+	if err := moveFiles(k.c); err != nil {
 		return errors.Wrap(err, "moving kubeadm files into vm")
 	}
 
-	client, _ := sshutil.NewSSHClient(d)
-	sess, _ := client.NewSession()
-	sess.Run("sudo cp /kubeadm/kubelet /usr/bin/kubelet")
-	sess.Run("sudo cp /kubeadm/kubeadm /usr/bin/kubeadm")
-	sess.Run("sudo cp /kubeadm/kubelet.service /lib/systemd/system")
-	sess.Run("sudo mkdir -p /etc/systemd/system/kubelet.service.d/ && sudo cp /kubeadm/10-kubeadm.conf /etc/systemd/system/kubelet.service.d/10-kubeadm.conf")
-	sess.Run("sudo systemctl daemon-reload")
-	sess.Run("sudo systemctl enable kubelet")
-	sess.Run("sudo systemctl start kubelet")
-	// sess.Run("sudo /usr/bin/kubeadm init")
-
-	//var unitPath = "/etc/systemd/system/kubelet.service"
-
-	return nil
-}
-
-func moveFiles(d drivers.Driver) error {
-	client, err := sshutil.NewSSHClient(d)
+	_, err := sshutil.RunCommandOutput(k.c, `
+sudo cp /kubeadm/kubelet /usr/bin/kubelet &&
+sudo cp /kubeadm/kubeadm /usr/bin/kubeadm &&
+sudo cp /kubeadm/kubelet.service /lib/systemd/system &&
+sudo mkdir -p /etc/systemd/system/kubelet.service.d/ && 
+sudo cp /kubeadm/10-kubeadm.conf /etc/systemd/system/kubelet.service.d/10-kubeadm.conf &&
+sudo systemctl daemon-reload &&
+sudo systemctl enable kubelet &&
+sudo systemctl start kubelet
+`)
 	if err != nil {
-		return errors.Wrap(err, "Error creating new ssh client")
-	}
-
-	if err := sshutil.TransferMinikubeFolderToVM("bin", "/kubeadm", "0641", client); err != nil {
-		return err
-	}
-
-	if err := sshutil.TransferMinikubeFolderToVM("deploy", "/kubeadm", "0640", client); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (*KubeadmBootstrapper) GetClusterLogs(api libmachine.API, follow bool) (string, error) {
-	return "", nil
+func moveFiles(c *ssh.Client) error {
+	dst := "/kubeadm"
+	folders := map[string]string{
+		constants.MakeMiniPath("out", "kubeadm", "bin"): "0641",
+		constants.MakeMiniPath("deploy"):                "0640",
+	}
+	for src, perm := range folders {
+		if err := sshutil.TransferMinikubeFolderToVM(src, dst, perm, c); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func (*KubeadmBootstrapper) GetClusterStatus(api libmachine.API) (string, error) {
+func (k *KubeadmBootstrapper) GetClusterLogs(follow bool) (string, error) {
+	out, err := sshutil.RunCommandOutput(k.c, "journalctl -u kubelet")
+	if err != nil {
+		return "", errors.Wrap(err, "getting logs")
+	}
+	return out, nil
+}
+
+func (k *KubeadmBootstrapper) GetClusterStatus() (string, error) {
 	return "", nil
 }

@@ -32,11 +32,14 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdUtil "k8s.io/minikube/cmd/util"
+	"k8s.io/minikube/pkg/minikube/boostrapper"
+	"k8s.io/minikube/pkg/minikube/boostrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/kubernetes_versions"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/kubeconfig"
@@ -88,6 +91,12 @@ func runStart(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 	defer api.Close()
+
+	exists, err := api.Exists(cfg.GetMachineName())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error checking if machine exists: %s\n", err)
+		os.Exit(1)
+	}
 
 	diskSize := viper.GetString(humanReadableDiskSize)
 	diskSizeMB := calculateDiskSizeInMB(diskSize)
@@ -142,10 +151,23 @@ func runStart(cmd *cobra.Command, args []string) {
 		glog.Errorln("Error getting VM IP address: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
-	kubernetesConfig := cluster.KubernetesConfig{
+
+	c, err := sshutil.NewSSHClient(host.Driver)
+	if err != nil {
+		glog.Errorln("error getting ssh client", err)
+		cmdUtil.MaybeReportErrorAndExit(err)
+	}
+
+	k8sBootstrapper := kubeadm.NewKubeadmBootstrapper(c)
+	if err != nil {
+		glog.Errorln("error getting kubeadm bootstrapper", err)
+		cmdUtil.MaybeReportErrorAndExit(err)
+	}
+
+	kubernetesConfig := bootstrapper.KubernetesConfig{
 		KubernetesVersion: viper.GetString(kubernetesVersion),
-		Bootstrapper:      bootstrapper,
 		NodeIP:            ip,
+		NodeName:          cfg.GetMachineName(),
 		APIServerName:     viper.GetString(apiServerName),
 		DNSDomain:         viper.GetString(dnsDomain),
 		FeatureGates:      viper.GetString(featureGates),
@@ -155,7 +177,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("Moving files into cluster...")
-	if err := kubernetesConfig.Bootstrapper.UpdateCluster(host.Driver, kubernetesConfig); err != nil {
+	if err := k8sBootstrapper.UpdateCluster(kubernetesConfig, config.VMDriver); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
@@ -168,9 +190,16 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	fmt.Println("Starting cluster components...")
 
-	if err := kubernetesConfig.Bootstrapper.StartCluster(api, kubernetesConfig); err != nil {
-		glog.Errorln("Error starting cluster: ", err)
-		cmdUtil.MaybeReportErrorAndExit(err)
+	if exists {
+		if err := k8sBootstrapper.RestartCluster(kubernetesConfig); err != nil {
+			glog.Errorln("Error starting cluster: ", err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
+	} else {
+		if err := k8sBootstrapper.StartCluster(kubernetesConfig); err != nil {
+			glog.Errorln("Error starting cluster: ", err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
 	}
 
 	fmt.Println("Connecting to cluster...")
@@ -300,7 +329,7 @@ func init() {
 	startCmd.Flags().StringArrayVar(&dockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for localkube/kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().String(dnsDomain, constants.ClusterDNSDomain, "The cluster dns domain name used in the kubernetes cluster")
-	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", []string{pkgutil.DefaultInsecureRegistry}, "Insecure Docker registries to pass to the Docker daemon")
+	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", []string{pkgutil.DefaultServiceCIDR}, "Insecure Docker registries to pass to the Docker daemon")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
 	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will use (ex: v1.2.3) \n OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64)")
 	startCmd.Flags().String(containerRuntime, "", "The container runtime to be used")

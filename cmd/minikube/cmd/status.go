@@ -25,10 +25,12 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	cmdUtil "k8s.io/minikube/cmd/util"
+	"k8s.io/minikube/pkg/minikube/boostrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util/kubeconfig"
 )
 
@@ -62,7 +64,23 @@ var statusCmd = &cobra.Command{
 		ls := state.None.String()
 		ks := state.None.String()
 		if ms == state.Running.String() {
-			ls, err = bootstrapper.GetClusterStatus(api)
+			h, err := cluster.CheckIfApiExistsAndLoad(api)
+			if err != nil {
+				glog.Errorln("error getting host", err)
+				cmdUtil.MaybeReportErrorAndExit(err)
+			}
+			c, err := sshutil.NewSSHClient(h.Driver)
+			if err != nil {
+				glog.Errorln("error getting ssh client", err)
+				cmdUtil.MaybeReportErrorAndExit(err)
+			}
+
+			bootstrapper := kubeadm.NewKubeadmBootstrapper(c)
+			if err != nil {
+				glog.Errorln("error getting kubeadm bootstrapper", err)
+				cmdUtil.MaybeReportErrorAndExit(err)
+			}
+			ls, err = bootstrapper.GetClusterStatus()
 			if err != nil {
 				glog.Errorln("Error localkube status:", err)
 				cmdUtil.MaybeReportErrorAndExit(err)

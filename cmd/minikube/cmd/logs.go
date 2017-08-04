@@ -21,9 +21,13 @@ import (
 	"log"
 	"os"
 
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	cmdUtil "k8s.io/minikube/cmd/util"
+	"k8s.io/minikube/pkg/minikube/boostrapper/kubeadm"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/sshutil"
 )
 
 var (
@@ -42,7 +46,23 @@ var logsCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		defer api.Close()
-		s, err := bootstrapper.GetClusterLogs(api, follow)
+		h, err := cluster.CheckIfApiExistsAndLoad(api)
+		if err != nil {
+			glog.Errorln("error getting host", err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
+		c, err := sshutil.NewSSHClient(h.Driver)
+		if err != nil {
+			glog.Errorln("error getting ssh client", err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
+
+		bootstrapper := kubeadm.NewKubeadmBootstrapper(c)
+		if err != nil {
+			glog.Errorln("error getting kubeadm bootstrapper", err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
+		s, err := bootstrapper.GetClusterLogs(follow)
 		if err != nil {
 			log.Println("Error getting machine logs:", err)
 			cmdUtil.MaybeReportErrorAndExit(err)

@@ -16,11 +16,7 @@ limitations under the License.
 
 package cluster
 
-import (
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/drivers"
-	"k8s.io/minikube/pkg/util"
-)
+import "k8s.io/minikube/pkg/util"
 
 // MachineConfig contains the parameters used to start a cluster.
 type MachineConfig struct {
@@ -39,24 +35,4 @@ type MachineConfig struct {
 	Downloader          util.ISODownloader
 	DockerOpt           []string // Each entry is formatted as KEY=VALUE.
 	DisableDriverMounts bool     // Only used by virtualbox and xhyve
-}
-
-// KubernetesConfig contains the parameters used to configure the VM Kubernetes.
-type KubernetesConfig struct {
-	KubernetesVersion string
-	Bootstrapper      Bootstrapper
-	NodeIP            string
-	APIServerName     string
-	DNSDomain         string
-	ContainerRuntime  string
-	NetworkPlugin     string
-	FeatureGates      string
-	ExtraOptions      util.ExtraOptionSlice
-}
-
-type Bootstrapper interface {
-	StartCluster(api libmachine.API, k8s KubernetesConfig) error
-	UpdateCluster(d drivers.Driver, k8s KubernetesConfig) error
-	GetClusterLogs(api libmachine.API, follow bool) (string, error)
-	GetClusterStatus(api libmachine.API) (string, error)
 }
