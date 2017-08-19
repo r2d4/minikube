@@ -232,7 +232,6 @@ func UpdateCluster(cmd bootstrapper.CommandRunner, config KubernetesConfig) erro
 	}
 
 	for _, f := range copyableFiles {
-		// fmt.Println(f.GetAssetName())
 		if err := cmd.Copy(f); err != nil {
 			return err
 		}
