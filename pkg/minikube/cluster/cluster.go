@@ -46,6 +46,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/kubeconfig"
 )
@@ -201,6 +202,14 @@ func StartCluster(cmd bootstrapper.CommandRunner, kubernetesConfig KubernetesCon
 }
 
 func UpdateCluster(cmd bootstrapper.CommandRunner, config KubernetesConfig) error {
+	// Make best effort to cache images
+	go func() {
+		if err := machine.CacheAndLoadImagesParallel(cmd, constants.LocalkubeCachedImages, constants.ImageCacheDir); err != nil {
+			glog.Infoln("Error caching images: %s", err)
+			return
+		}
+		glog.Infoln("Successfully cached and loaded images")
+	}()
 	copyableFiles := []assets.CopyableFile{}
 	var localkubeFile assets.CopyableFile
 	var err error
