@@ -36,6 +36,7 @@ import (
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
 )
@@ -190,16 +191,32 @@ func configureAuth(p *BuildrootProvisioner) error {
 		return errors.Wrap(err, "error getting ip during provisioning")
 	}
 
-	if err := util.CopyFile(authOptions.CaCertPath, filepath.Join(authOptions.StorePath, "ca.pem")); err != nil {
-		return fmt.Errorf("Copying ca.pem to machine dir failed: %s", err)
+	cmd := &bootstrapper.ExecRunner{}
+	caCert, err := assets.NewFileAsset(authOptions.CaCertPath, authOptions.StorePath, "ca.pem", "0777")
+	if err != nil {
+		return errors.Wrapf(err, "Copying ca.pem to machine dir failed")
 	}
 
-	if err := util.CopyFile(authOptions.ClientCertPath, filepath.Join(authOptions.StorePath, "cert.pem")); err != nil {
-		return fmt.Errorf("Copying cert.pem to machine dir failed: %s", err)
+	clientCert, err := assets.NewFileAsset(authOptions.ClientCertPath, authOptions.StorePath, "cert.pem", "0777")
+	if err != nil {
+		return errors.Wrapf(err, "Copying cert.pem to machine dir failed")
 	}
 
-	if err := util.CopyFile(authOptions.ClientKeyPath, filepath.Join(authOptions.StorePath, "key.pem")); err != nil {
-		return fmt.Errorf("Copying key.pem to machine dir failed: %s", err)
+	clientKey, err := assets.NewFileAsset(authOptions.ClientKeyPath, authOptions.StorePath, "key.pem", "0777")
+	if err != nil {
+		return errors.Wrapf(err, "Copying key.pem to machine dir failed")
+	}
+
+	files := []assets.CopyableFile{
+		caCert,
+		clientCert,
+		clientKey,
+	}
+
+	for _, f := range files {
+		if err := cmd.Copy(f); err != nil {
+			return errors.Wrap(err, "error copying file")
+		}
 	}
 
 	// The Host IP is always added to the certificate's SANs list
@@ -237,12 +254,13 @@ func configureAuth(p *BuildrootProvisioner) error {
 		return errors.Wrap(err, "provisioning: error getting ssh client")
 	}
 
+	sshRunner := bootstrapper.NewSSHRunner(sshClient)
 	for src, dst := range certs {
 		f, err := assets.NewFileAsset(src, filepath.Dir(dst), filepath.Base(dst), "0640")
 		if err != nil {
 			return errors.Wrapf(err, "error copying %s to %s", src, dst)
 		}
-		if err := sshutil.TransferFile(f, sshClient); err != nil {
+		if err := sshRunner.Copy(f); err != nil {
 			return errors.Wrapf(err, "transfering file to machine %v", f)
 		}
 	}
@@ -253,8 +271,7 @@ func configureAuth(p *BuildrootProvisioner) error {
 	}
 
 	log.Info("Setting Docker configuration on the remote daemon...")
-
-	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(dockerCfg.EngineOptionsPath), dockerCfg.EngineOptions, dockerCfg.EngineOptionsPath)); err != nil {
+	if err := sshRunner.Run(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(dockerCfg.EngineOptionsPath), dockerCfg.EngineOptions, dockerCfg.EngineOptionsPath)); err != nil {
 		return err
 	}
 
