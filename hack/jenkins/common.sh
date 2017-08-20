@@ -81,8 +81,6 @@ sudo cat $KUBECONFIG
 MINIKUBE_WANTREPORTERRORPROMPT=False sudo ./out/minikube-${OS_ARCH} delete \
 || MINIKUBE_WANTREPORTERRORPROMPT=False ./out/minikube-${OS_ARCH} delete \
 || true
-sudo rm -rf $HOME/.minikube || true
-sudo rm -rf $HOME/.kube || true
 
 if [[ $result -eq 0 ]]; then
   status="success"
