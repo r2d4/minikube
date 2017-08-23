@@ -41,7 +41,7 @@ import (
 )
 
 type K8sClient interface {
-	GetCoreClient() (corev1.CoreV1Interface, error)
+	GetClientset() (kubernetes.Interface, error)
 }
 
 type K8sClientGetter struct{}
@@ -52,19 +52,19 @@ func init() {
 	k8s = &K8sClientGetter{}
 }
 
-func (*K8sClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
+func (*K8sClientGetter) GetClientset() (kubernetes.Interface, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 	config, err := kubeConfig.ClientConfig()
 	if err != nil {
-		return nil, fmt.Errorf("Error creating kubeConfig: %s", err)
+		return &kubernetes.Clientset{}, fmt.Errorf("Error creating kubeConfig: %s", err)
 	}
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
+		return &kubernetes.Clientset{}, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
 	}
-	return client.Core(), nil
+	return client, nil
 }
 
 type ServiceURL struct {
@@ -88,12 +88,12 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 		return nil, err
 	}
 
-	client, err := k8s.GetCoreClient()
+	client, err := k8s.GetClientset()
 	if err != nil {
 		return nil, err
 	}
 
-	serviceInterface := client.Services(namespace)
+	serviceInterface := client.Core().Services(namespace)
 
 	svcs, err := serviceInterface.List(meta_v1.ListOptions{})
 	if err != nil {
@@ -102,7 +102,7 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 
 	var serviceURLs []ServiceURL
 	for _, svc := range svcs.Items {
-		urls, err := printURLsForService(client, ip, svc.Name, svc.Namespace, t)
+		urls, err := printURLsForService(client.Core(), ip, svc.Name, svc.Namespace, t)
 		if err != nil {
 			return nil, err
 		}
@@ -125,12 +125,12 @@ func GetServiceURLsForService(api libmachine.API, namespace, service string, t *
 		return nil, errors.Wrap(err, "Error getting ip from host")
 	}
 
-	client, err := k8s.GetCoreClient()
+	client, err := k8s.GetClientset()
 	if err != nil {
 		return nil, err
 	}
 
-	return printURLsForService(client, ip, service, namespace, t)
+	return printURLsForService(client.Core(), ip, service, namespace, t)
 }
 
 func printURLsForService(c corev1.CoreV1Interface, ip, service, namespace string, t *template.Template) ([]string, error) {
@@ -178,16 +178,16 @@ func printURLsForService(c corev1.CoreV1Interface, ip, service, namespace string
 // CheckService waits for the specified service to be ready by returning an error until the service is up
 // The check is done by polling the endpoint associated with the service and when the endpoint exists, returning no error->service-online
 func CheckService(namespace string, service string) error {
-	client, err := k8s.GetCoreClient()
+	client, err := k8s.GetClientset()
 	if err != nil {
 		return errors.Wrap(err, "Error getting kubernetes client")
 	}
-	services := client.Services(namespace)
+	services := client.Core().Services(namespace)
 	err = validateService(services, service)
 	if err != nil {
 		return errors.Wrap(err, "Error validating service")
 	}
-	endpoints := client.Endpoints(namespace)
+	endpoints := client.Core().Endpoints(namespace)
 	return checkEndpointReady(endpoints, service)
 }
 
@@ -242,11 +242,11 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 }
 
 func GetServiceListByLabel(namespace string, key string, value string) (*v1.ServiceList, error) {
-	client, err := k8s.GetCoreClient()
+	client, err := k8s.GetClientset()
 	if err != nil {
 		return &v1.ServiceList{}, &util.RetriableError{Err: err}
 	}
-	services := client.Services(namespace)
+	services := client.Core().Services(namespace)
 	if err != nil {
 		return &v1.ServiceList{}, &util.RetriableError{Err: err}
 	}
@@ -265,11 +265,11 @@ func getServiceListFromServicesByLabel(services corev1.ServiceInterface, key str
 
 // CreateSecret creates or modifies secrets
 func CreateSecret(namespace, name string, dataValues map[string]string, labels map[string]string) error {
-	client, err := k8s.GetCoreClient()
+	client, err := k8s.GetClientset()
 	if err != nil {
 		return &util.RetriableError{Err: err}
 	}
-	secrets := client.Secrets(namespace)
+	secrets := client.Core().Secrets(namespace)
 	if err != nil {
 		return &util.RetriableError{Err: err}
 	}
@@ -311,12 +311,12 @@ func CreateSecret(namespace, name string, dataValues map[string]string, labels m
 
 // DeleteSecret deletes a secret from a namespace
 func DeleteSecret(namespace, name string) error {
-	client, err := k8s.GetCoreClient()
+	client, err := k8s.GetClientset()
 	if err != nil {
 		return &util.RetriableError{Err: err}
 	}
 
-	secrets := client.Secrets(namespace)
+	secrets := client.Core().Secrets(namespace)
 	if err != nil {
 		return &util.RetriableError{Err: err}
 	}

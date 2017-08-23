@@ -17,6 +17,7 @@ limitations under the License.
 package service
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -26,8 +27,10 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
+	fakecorev1 "k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/tests"
@@ -37,14 +40,16 @@ type MockClientGetter struct {
 	servicesMap map[string]corev1.ServiceInterface
 }
 
-func (m *MockClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
-	return &MockCoreClient{
+var clientGetter = &MockClientGetter{}
+
+func (m *MockClientGetter) GetClientset() (kubernetes.Interface, error) {
+	return &MockKubernetesClient{
 		servicesMap: m.servicesMap,
 	}, nil
 }
 
-type MockCoreClient struct {
-	fake.FakeCoreV1
+type MockKubernetesClient struct {
+	fake.Clientset
 	servicesMap map[string]corev1.ServiceInterface
 }
 
@@ -80,16 +85,12 @@ var defaultNamespaceServiceInterface = &MockServiceInterface{
 	},
 }
 
-func (m *MockCoreClient) Endpoints(namespace string) corev1.EndpointsInterface {
-	return &MockEndpointsInterface{}
-}
-
-func (m *MockCoreClient) Services(namespace string) corev1.ServiceInterface {
+func (m *MockKubernetesClient) Services(namespace string) corev1.ServiceInterface {
 	return m.servicesMap[namespace]
 }
 
 type MockEndpointsInterface struct {
-	fake.FakeEndpoints
+	fakecorev1.FakeEndpoints
 	Endpoints *v1.Endpoints
 }
 
@@ -131,43 +132,89 @@ func (e MockEndpointsInterface) Get(name string, _ meta_v1.GetOptions) (*v1.Endp
 func TestCheckEndpointReady(t *testing.T) {
 	var tests = []struct {
 		description string
-		service     string
+		endpoints   *v1.Endpoints
 		err         bool
 	}{
 		{
 			description: "Endpoint with no subsets should return an error",
-			service:     "no-subsets",
 			err:         true,
 		},
 		{
 			description: "Endpoint with no ready endpoints should return an error",
-			service:     "not-ready",
-			err:         true,
+			endpoints: &v1.Endpoints{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name:      "testservice",
+					Namespace: "default",
+				},
+				Subsets: []v1.EndpointSubset{
+					{
+						Addresses: []v1.EndpointAddress{},
+						NotReadyAddresses: []v1.EndpointAddress{
+							{IP: "1.1.1.1"},
+							{IP: "2.2.2.2"},
+						},
+					},
+				},
+			},
+			err: true,
 		},
 		{
 			description: "Endpoint with at least one ready endpoint should not return an error",
-			service:     "one-ready",
-			err:         false,
+			endpoints: &v1.Endpoints{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name:      "testservice",
+					Namespace: "default",
+				},
+				Subsets: []v1.EndpointSubset{
+					{
+						Addresses: []v1.EndpointAddress{
+							{IP: "1.1.1.1"},
+						},
+						NotReadyAddresses: []v1.EndpointAddress{
+							{IP: "2.2.2.2"},
+						},
+					},
+				},
+			},
+			err: false,
 		},
 	}
-
+	client, err := clientGetter.GetClientset()
+	if err != nil {
+		t.Fatalf("Error getting clientset: %s", err)
+	}
 	for _, test := range tests {
 		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
-			err := checkEndpointReady(&MockEndpointsInterface{}, test.service)
+			var e *v1.Endpoints
+			if test.endpoints != nil {
+				e, err = client.Core().Endpoints("default").Create(test.endpoints)
+				fmt.Println("created : ", e)
+				if err != nil {
+					t.Fatalf("Error creating endpoint for test: %s", err)
+				}
+			}
+			a, _ := client.Core().Endpoints("default").List(meta_v1.ListOptions{})
+			fmt.Println("endpoints: ", a.Items)
+			err = checkEndpointReady(client.Core().Endpoints("default"), "testservice")
 			if err != nil && !test.err {
 				t.Errorf("Check endpoints returned an error: %+v", err)
 			}
 			if err == nil && test.err {
 				t.Errorf("Check endpoints should have returned an error but returned nil")
 			}
+			if test.endpoints != nil {
+				if err := client.Core().Endpoints("default").Delete(e.Name, &meta_v1.DeleteOptions{}); err != nil {
+					t.Fatalf("Error creating endpoint for test: %s", err)
+				}
+			}
 		})
 	}
 }
 
 type MockServiceInterface struct {
-	fake.FakeServices
+	fakecorev1.FakeServices
 	ServiceList *v1.ServiceList
 }
 
@@ -226,7 +273,7 @@ func TestGetServiceListFromServicesByLabel(t *testing.T) {
 
 func TestPrintURLsForService(t *testing.T) {
 	defaultTemplate := template.Must(template.New("svc-template").Parse("http://{{.IP}}:{{.Port}}"))
-	client := &MockCoreClient{
+	client := &MockKubernetesClient{
 		servicesMap: serviceNamespaces,
 	}
 	var tests = []struct {
@@ -260,7 +307,7 @@ func TestPrintURLsForService(t *testing.T) {
 		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
-			urls, err := printURLsForService(client, "127.0.0.1", test.serviceName, test.namespace, test.tmpl)
+			urls, err := printURLsForService(client.Core(), "127.0.0.1", test.serviceName, test.namespace, test.tmpl)
 			if err != nil && !test.err {
 				t.Errorf("Error: %s", err)
 			}
