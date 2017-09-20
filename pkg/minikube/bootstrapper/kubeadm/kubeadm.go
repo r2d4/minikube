@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/state"
 	download "github.com/jimmidyson/go-download"
@@ -44,6 +45,9 @@ type KubeadmBootstrapper struct {
 	c bootstrapper.CommandRunner
 }
 
+// Versions 1.8 and above require the --fail-swap-on=false flag
+var version18 = semver.MustParse("1.8.0-alpha.0")
+
 // TODO(r2d4): template this with bootstrapper.KubernetesConfig
 const kubeletSystemdConf = `
 [Service]
@@ -53,7 +57,7 @@ Environment="KUBELET_DNS_ARGS=--cluster-dns=10.0.0.10 --cluster-domain=cluster.l
 Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=0"
 Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=cgroupfs"
 ExecStart=
-ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_SYSTEM_PODS_ARGS $KUBELET_DNS_ARGS $KUBELET_CADVISOR_ARGS $KUBELET_CGROUP_ARGS $KUBELET_EXTRA_ARGS
+ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_SYSTEM_PODS_ARGS $KUBELET_DNS_ARGS $KUBELET_CADVISOR_ARGS $KUBELET_CGROUP_ARGS {{.ExtraOptions}}
 `
 
 const kubeletService = `
@@ -231,6 +235,33 @@ func (k *KubeadmBootstrapper) SetupCerts(k8s bootstrapper.KubernetesConfig) erro
 	return bootstrapper.SetupCerts(k.c, k8s)
 }
 
+func NewKubeletConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
+	flags := []string{}
+	for _, opt := range k8s.ExtraOptions {
+		if opt.Component == "kubelet" {
+			flags = append(flags, fmt.Sprintf("--%s=%s", opt.Key, opt.Value))
+		}
+	}
+	// Strip leading 'v' prefix from version for semver parsing
+	fmt.Println(k8s.KubernetesVersion)
+	version, err := semver.Make(k8s.KubernetesVersion[1:])
+	if err != nil {
+		return "", errors.Wrap(err, "parsing kubernetes version")
+	}
+
+	// versions >= 1.8.0-alpha.0 require the --fail-swap-on flag set to false
+	if version.GTE(version18) {
+		flags = append(flags, "--fail-swap-on=false")
+	}
+	t := template.Must(template.New("kubeletConf").Parse(kubeletSystemdConf))
+	b := bytes.Buffer{}
+	if err := t.Execute(&b, map[string]string{"ExtraOptions": strings.Join(flags, " ")}); err != nil {
+		return "", err
+	}
+
+	return b.String(), nil
+}
+
 func (k *KubeadmBootstrapper) UpdateCluster(cfg bootstrapper.KubernetesConfig) error {
 	if cfg.ShouldLoadCachedImages {
 		// Make best effort to load any cached images
@@ -241,9 +272,14 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg bootstrapper.KubernetesConfig) e
 		return errors.Wrap(err, "generating kubeadm cfg")
 	}
 
+	kubeletCfg, err := NewKubeletConfig(cfg)
+	if err != nil {
+		return errors.Wrap(err, "generating kubelet config")
+	}
+
 	files := []assets.CopyableFile{
 		assets.NewMemoryAssetTarget([]byte(kubeletService), constants.KubeletServiceFile, "0640"),
-		assets.NewMemoryAssetTarget([]byte(kubeletSystemdConf), constants.KubeletSystemdConfFile, "0640"),
+		assets.NewMemoryAssetTarget([]byte(kubeletCfg), constants.KubeletSystemdConfFile, "0640"),
 		assets.NewMemoryAssetTarget([]byte(kubeadmCfg), constants.KubeadmConfigFile, "0640"),
 	}
 
