@@ -47,7 +47,6 @@ type LocalkubeServer struct {
 	Containerized            bool
 	EnableDNS                bool
 	DNSDomain                string
-	DNSIP                    net.IP
 	LocalkubeDirectory       string
 	ServiceClusterIPRange    net.IPNet
 	APIServerAddress         net.IP
@@ -263,7 +262,7 @@ func (lk LocalkubeServer) GenerateKubeconfig() error {
 }
 
 func (lk LocalkubeServer) getAllIPs() ([]net.IP, error) {
-	ips := []net.IP{net.ParseIP(util.DefaultServiceClusterIP)}
+	ips := []net.IP{lk.ServiceClusterIPRange}
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return nil, err

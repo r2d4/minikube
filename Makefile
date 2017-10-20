@@ -188,7 +188,7 @@ ifneq ($(GOPATH)/src/$(REPOPATH),$(PWD))
 	$(warning Warning: Building minikube outside the GOPATH, should be $(GOPATH)/src/$(REPOPATH) but is $(PWD))
 endif
 
-pkg/minikube/assets/assets.go: out/localkube $(GOPATH)/bin/go-bindata $(shell find deploy/addons -type f)
+pkg/minikube/assets/assets.go: $(GOPATH)/bin/go-bindata $(shell find deploy/addons -type f)
 	$(GOPATH)/bin/go-bindata -nomemcopy -o pkg/minikube/assets/assets.go -pkg assets ./out/localkube deploy/addons/...
 
 $(GOPATH)/bin/go-bindata:
